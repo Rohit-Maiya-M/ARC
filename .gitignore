@@ -1,0 +1,34 @@
+# Environment and secrets
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.venv*/
+
+# Chroma / generated vector data
+ai-service/chroma_db/
+
+# Java / Maven
+target/
+backend-java/target/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local repository uploads / generated data
+/repositories/
+/models/
