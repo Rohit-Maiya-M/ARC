@@ -34,8 +34,18 @@ Thumbs.db
 /models/
 
 ### application.properties ###
-backend-java\src\main\resources\application.properties
+backend-java/src/main/resources/application.properties
 
-ai-service\.env
+ai-service/.env
 
 arc.txt
+ai-service/aider-env/
+ai-service/output.md
+ai-service/retrieval_tuning_plan.md
+ai-service/verify.py
+
+### Temporary files and directories ###
+docker/
+frontend/
+models/
+scripts/

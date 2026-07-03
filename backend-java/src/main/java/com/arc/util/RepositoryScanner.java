@@ -23,7 +23,8 @@ public class RepositoryScanner {
             ".py",
             ".json",
             ".yml",
-            ".yaml"
+            ".yaml",
+            ".sql"
     );
 
     private static final Set<String>

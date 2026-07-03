@@ -1,8 +1,8 @@
 package com.arc.controller;
 
-import com.arc.dto.RepositoryResponseDto;
-import com.arc.dto.SummaryResponseDto;
+import com.arc.dto.*;
 import com.arc.service.RepositoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/repositories")
@@ -17,6 +18,23 @@ import java.io.IOException;
 public class RepositoryController {
 
     private final RepositoryService repositoryService;
+
+    @GetMapping
+    public ResponseEntity<List<RepositoryResponseDto>> getAllRepository(){
+        List<RepositoryResponseDto> response = repositoryService.getAllRepository();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{repositoryId}")
+    public ResponseEntity<RepositoryResponseDto> getRepository(
+            @PathVariable
+            Long repositoryId
+    ){
+        RepositoryResponseDto response = repositoryService.getRepository(repositoryId);
+
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/upload")
     public ResponseEntity<RepositoryResponseDto>
@@ -52,4 +70,34 @@ public class RepositoryController {
         return ResponseEntity
                 .ok(response);
     }
+
+
+    @PostMapping("/{repositoryId}/ask")
+    public ResponseEntity<AskResponseDto> askRepository(
+            @PathVariable Long repositoryId,
+            @Valid @RequestBody AskQuestionRequestDTO dto
+    ) {
+
+        AskResponseDto response =
+                repositoryService.askRepository(
+                        repositoryId,
+                        dto.getQuestion()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{repositoryId}/gemini/ask")
+    public ResponseEntity<AskResponseDto> askGenerativeAIRepository(
+            @PathVariable Long repositoryId,
+            @Valid @RequestBody AskQuestionRequestDTO dto
+    ){
+        AskResponseDto response = repositoryService.askGenerativeAIRepository(
+                repositoryId,
+                dto.getQuestion()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 }

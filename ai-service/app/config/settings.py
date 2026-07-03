@@ -41,7 +41,7 @@ LLAMA_N_GPU_LAYERS = int(
 LLAMA_CTX_SIZE = int(
     os.getenv(
         "LLAMA_CTX_SIZE",
-        "4096"
+        "8192"
     )
 )
 

@@ -1,9 +1,7 @@
 package com.arc.service;
 
 import com.arc.chunking.SemanticChunker;
-import com.arc.dto.IndexRequestDto;
-import com.arc.dto.RepositoryResponseDto;
-import com.arc.dto.SummaryResponseDto;
+import com.arc.dto.*;
 import com.arc.entity.RepositoryEntity;
 import com.arc.entity.RepositoryStatus;
 import com.arc.models.CodeChunk;
@@ -27,6 +25,7 @@ import java.nio.file.Paths;
 
 import java.time.LocalDateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -170,56 +169,49 @@ public class RepositoryService {
                 "\n===== CODE CHUNKS ====="
         );
 
-        codeChunks.forEach(chunk -> {
+        int totalChunks = codeChunks.size();
 
-            System.out.println(
-                    "\nCHUNK ID: "
-                            + chunk.getChunkId()
-            );
+        double factor = 0.1;
+        int calculated = (int) Math.ceil(totalChunks * factor);
+        
+        int batchSize = (calculated < 100) ? 100 : calculated;
 
-            System.out.println(
-                    "FILE: "
-                            + chunk.getRelativePath()
-            );
+        List<List<IndexRequestDto>> batches = new ArrayList<>();
+        List<IndexRequestDto> batch = new ArrayList<>();
 
-            System.out.println(
-                    "CONTENT LENGTH: "
-                            + chunk.getContent().length()
-            );
+        for(CodeChunk chunk: codeChunks){
+            IndexRequestDto request = IndexRequestDto.builder()
+                    .chunkId(chunk.getChunkId())
+                    .repositoryId(savedRepository.getId())
+                    .content(chunk.getContent())
+                    .metadata(Map.of(
+                            "filename", chunk.getFileName(),
+                            "extension", chunk.getExtension(),
+                            "content", chunk.getContent()
+                    ))
+                    .build();
+            batch.add(request);
 
-            IndexRequestDto request =
-                    IndexRequestDto.builder()
+            if (batch.size() == batchSize) {
+                batches.add(new ArrayList<>(batch));
+                batch.clear();
+            }
+        }
 
-                            .chunkId(
-                                    chunk.getChunkId()
-                            )
+        if (!batch.isEmpty()) {
+            batches.add(new ArrayList<>(batch));
+        }
 
-                            .repositoryId(
-                                    savedRepository.getId()
-                            )
-
-                            .content(
-                                    chunk.getContent()
-                            )
-
-                            .metadata(
-                                    Map.of(
-                                            "filename",
-                                            chunk.getFileName(),
-
-                                            "extension",
-                                            chunk.getExtension(),
-
-                                            "content",
-                                            chunk.getContent()
-                                    )
-                            )
-
-                            .build();
-
-            aiServiceClient.indexChunk(
-                    request
-            );
+        batches.parallelStream().forEach(b -> {
+            System.out.println("Sending batch of size: " + b.size());
+            try{
+                aiServiceClient.indexChunk(IndexBatchRequestDTO.builder()
+                        .requests(b)
+                        .build());
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
         });
 
         return RepositoryResponseDto
@@ -253,5 +245,74 @@ public class RepositoryService {
         return aiServiceClient.summarizeRepository(
                 repositoryId
         );
+    }
+
+    public AskResponseDto askRepository(
+            Long repositoryId,
+            String question
+    ){
+        repositoryRepository.findById(repositoryId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Repository not found: "
+                                + repositoryId
+                        )
+                );
+
+        return aiServiceClient.askRepository(
+                repositoryId,
+                question
+        );
+    }
+
+    public AskResponseDto askGenerativeAIRepository(
+            Long repositoryId,
+            String question
+    ){
+        repositoryRepository.findById(repositoryId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Repository not found: "
+                                        + repositoryId
+                        )
+                );
+
+        return aiServiceClient.askGenerativeAIRepository(
+                repositoryId,
+                question
+        );
+    }
+
+    public List<RepositoryResponseDto> getAllRepository(){
+        List<RepositoryResponseDto> repos = repositoryRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return repos;
+    }
+
+    public RepositoryResponseDto getRepository(
+            Long repositoryId
+    ){
+        RepositoryEntity repository =
+                repositoryRepository.findById(repositoryId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Repository not found: "
+                                                + repositoryId
+                                )
+                        );
+
+        return mapToResponse(repository);
+    }
+
+    private RepositoryResponseDto mapToResponse(RepositoryEntity repo){
+        return RepositoryResponseDto.builder()
+                .id(repo.getId())
+                .name(repo.getName())
+                .status(repo.getStatus())
+                .uploadedAt(repo.getUploadedAt())
+                .build();
     }
 }

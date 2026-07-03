@@ -1,19 +1,20 @@
 package com.arc.service;
 
 
-import com.arc.dto.IndexRequestDto;
-import com.arc.dto.SummaryRequestDto;
-import com.arc.dto.SummaryResponseDto;
+import com.arc.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
 public class AIServiceClient {
 
     private final RestTemplate restTemplate;
+    private final KafkaProducerService producerService;
+    private final ObjectMapper objectMapper;
 
     @Value("${settings.paths.index_url}")
     private String indexUrl;
@@ -21,21 +22,21 @@ public class AIServiceClient {
     @Value("${settings.paths.summary_url}")
     private String summaryUrl;
 
-    public void indexChunk(
-            IndexRequestDto request
-    ) {
+    @Value("${settings.paths.ask_url}")
+    private String askUrl;
 
-        System.out.println(
-                "Indexing chunk: "
-                        + request.getChunkId()
-        );
+    @Value("${settings.paths.ask_generative_ai_url}")
+    private String askGenerativeAIUrl;
 
-        restTemplate.postForObject(
-                indexUrl,
-                request,
-                String.class
-        );
+    public void indexChunk(IndexBatchRequestDTO requests) {
+        try {
+            String jsonBatch = objectMapper.writeValueAsString(requests);
+            producerService.sendBatch(jsonBatch);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to index batch", e);
+        }
     }
+
 
     public SummaryResponseDto summarizeRepository(
             Long repositoryId
@@ -52,4 +53,38 @@ public class AIServiceClient {
                 SummaryResponseDto.class
         );
     }
+
+    public AskResponseDto askRepository(
+            Long repositoryId,
+            String question
+    ){
+        AskRequestDto request =
+                AskRequestDto.builder()
+                        .repositoryId(repositoryId)
+                        .question(question)
+                        .build();
+
+        return restTemplate.postForObject(
+                askUrl,
+                request,
+                AskResponseDto.class
+        );
+    }
+
+    public AskResponseDto askGenerativeAIRepository(
+            Long repositoryId,
+            String question
+    ){
+        AskRequestDto request = AskRequestDto.builder()
+                .repositoryId(repositoryId)
+                .question(question)
+                .build();
+
+        return restTemplate.postForObject(
+                askGenerativeAIUrl,
+                request,
+                AskResponseDto.class
+        );
+    }
+
 }
