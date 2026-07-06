@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+body{
+  background-color: #09090b; /* Equates to zinc-950 */
+  color: #f4f4f5;            /* Equates to zinc-100 */
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.sp-layout {
+  border-color: #27272a !important; /* zinc-800 */
+}
