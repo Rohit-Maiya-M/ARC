@@ -49,3 +49,6 @@ docker/
 frontend/
 models/
 scripts/
+
+ARC-Repositories/*
+!ARC-Repositories/.gitkeep

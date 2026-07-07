@@ -283,6 +283,26 @@ public class RepositoryService {
         );
     }
 
+    public Map<String, String> getRepositoryFilesMap(Long repositoryId) throws IOException {
+        RepositoryEntity repo = repositoryRepository.findById(repositoryId)
+                .orElseThrow(() -> new IllegalArgumentException("Repository not found"));
+
+        Path extractedRoot = Paths.get(repo.getExtractedPath());
+        List<Path> scannedPaths = com.arc.util.RepositoryScanner.scanRepository(extractedRoot);
+
+        Map<String, String> filesMap = new java.util.HashMap<>();
+        for (Path relPath : scannedPaths) {
+            Path fullPath = extractedRoot.resolve(relPath);
+            String content = Files.readString(fullPath);
+
+            // Convert to a standardized forward-slash key name for the frontend map
+            String cleanKey = "/" + relPath.toString().replace("\\", "/");
+            filesMap.put(cleanKey, content);
+        }
+        return filesMap;
+    }
+
+
     public List<RepositoryResponseDto> getAllRepository(){
         List<RepositoryResponseDto> repos = repositoryRepository.findAll()
                 .stream()
