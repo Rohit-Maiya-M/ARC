@@ -1,0 +1,7 @@
+.venv310/
+aider-env/
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/

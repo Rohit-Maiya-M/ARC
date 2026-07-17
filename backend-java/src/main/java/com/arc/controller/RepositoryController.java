@@ -16,7 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/repositories")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+// FIXED: Reads the frontend URL dynamically from your AWS environment configuration
+@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:3000}")
 public class RepositoryController {
 
     private final RepositoryService repositoryService;
@@ -30,8 +31,7 @@ public class RepositoryController {
 
     @GetMapping("/{repositoryId}")
     public ResponseEntity<RepositoryResponseDto> getRepository(
-            @PathVariable
-            Long repositoryId
+            @PathVariable Long repositoryId
     ){
         RepositoryResponseDto response = repositoryService.getRepository(repositoryId);
 
@@ -39,17 +39,11 @@ public class RepositoryController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<RepositoryResponseDto>
-    uploadRepository(
-
-            @RequestParam("file")
-            MultipartFile file
-
+    public ResponseEntity<RepositoryResponseDto> uploadRepository(
+            @RequestParam("file") MultipartFile file
     ) throws IOException {
 
-        RepositoryResponseDto response =
-                repositoryService
-                        .uploadRepository(file);
+        RepositoryResponseDto response = repositoryService.uploadRepository(file);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -57,22 +51,14 @@ public class RepositoryController {
     }
 
     @PostMapping("/{repositoryId}/summary")
-    public ResponseEntity<SummaryResponseDto>
-    summarizeRepository(
-
-            @PathVariable
-            Long repositoryId
-
+    public ResponseEntity<SummaryResponseDto> summarizeRepository(
+            @PathVariable Long repositoryId
     ) {
 
-        SummaryResponseDto response =
-                repositoryService
-                        .summarizeRepository(repositoryId);
+        SummaryResponseDto response = repositoryService.summarizeRepository(repositoryId);
 
-        return ResponseEntity
-                .ok(response);
+        return ResponseEntity.ok(response);
     }
-
 
     @PostMapping("/{repositoryId}/ask")
     public ResponseEntity<AskResponseDto> askRepository(
@@ -80,8 +66,7 @@ public class RepositoryController {
             @Valid @RequestBody AskQuestionRequestDTO dto
     ) {
 
-        AskResponseDto response =
-                repositoryService.askRepository(
+        AskResponseDto response = repositoryService.askRepository(
                         repositoryId,
                         dto.getQuestion()
                 );
@@ -107,5 +92,4 @@ public class RepositoryController {
         Map<String, String> files = repositoryService.getRepositoryFilesMap(repositoryId);
         return ResponseEntity.ok(files);
     }
-
 }

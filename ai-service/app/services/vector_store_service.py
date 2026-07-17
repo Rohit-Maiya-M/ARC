@@ -1,23 +1,32 @@
-# app/services/vector_store_service.py
+import os
 from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility, Index
 from app.services.embedding_service import EmbeddingService
 
 class VectorStoreService:
-    def __init__(self, dim: int = 1024, collection_name: str = "ims_embeddings"):
+    def __init__(self, dim: int = None, collection_name: str = None):
         self.embedding_service = EmbeddingService()
-        connections.connect("default", host="127.0.0.1", port="19530")
+        
+        # Load configurations dynamically from environment variables
+        self.milvus_host = os.getenv("MILVUS_HOST", "localhost")
+        self.milvus_port = os.getenv("MILVUS_PORT", "19530")
+        
+        # Fall back to Env values, then default params
+        self.dim = dim or int(os.getenv("VECTOR_DIM", "1024"))
+        self.collection_name = collection_name or os.getenv("MILVUS_COLLECTION_NAME", "ims_embeddings")
+        
+        # Establishes internal container communication routing
+        connections.connect("default", host=self.milvus_host, port=self.milvus_port)
 
         fields = [
             FieldSchema(name="chunk_id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
             FieldSchema(name="repository_id", dtype=DataType.INT64),
             FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=8000),
             FieldSchema(name="filename", dtype=DataType.VARCHAR, max_length=256),
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=dim),
-            FieldSchema(name="meta_embedding", dtype=DataType.FLOAT_VECTOR, dim=dim),
+            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=self.dim),
+            FieldSchema(name="meta_embedding", dtype=DataType.FLOAT_VECTOR, dim=self.dim),
         ]
         schema = CollectionSchema(fields, description="ARC repository embeddings")
 
-        self.collection_name = collection_name
         if not utility.has_collection(self.collection_name):
             self.collection = Collection(self.collection_name, schema)
 

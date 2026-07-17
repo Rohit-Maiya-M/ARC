@@ -1,0 +1,20 @@
+# Ignore local database storage blocks
+.containers_data/
+ARC-Repositories/
+
+# Ignore local Python environment weights and massive cache sets
+**/venv*/
+**/.venv*/
+**/__pycache__/
+**/*.pyc
+
+# Ignore frontend node packages and local distribution logs
+**/node_modules/
+**/.next/
+**/.out/
+**/dist/
+**/target/
+
+# Ignore version control systems
+.git/
+.github/

@@ -1,19 +1,34 @@
-# app/services/retrieval_service.py
+import os
 import numpy as np
 from pymilvus import connections, Collection
 from app.services.embedding_service import EmbeddingService
 
 class RetrievalService:
-    def __init__(self, collection_name: str = "ims_embeddings", dim: int = 1024):
+    def __init__(self, collection_name: str = None, dim: int = None):
         self.embedding_service = EmbeddingService()
-        connections.connect("default", host="127.0.0.1", port="19530")
-        self.collection = Collection(collection_name)
+        
+        # Gather environment metrics
+        self.milvus_host = os.getenv("MILVUS_HOST", "localhost")
+        self.milvus_port = os.getenv("MILVUS_PORT", "19530")
+        self.collection_name = collection_name or os.getenv("MILVUS_COLLECTION_NAME", "ims_embeddings")
+        self.dim = dim or int(os.getenv("VECTOR_DIM", "1024"))
+        
+        # Dynamically load score configurations
+        self.default_min_score = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.30"))
+        self.default_max_tokens = int(os.getenv("RETRIEVAL_MAX_TOKENS", "4000"))
+        
+        connections.connect("default", host=self.milvus_host, port=self.milvus_port)
+        self.collection = Collection(self.collection_name)
 
     def search(self, repository_id: int, query: str, top_k: int = 5,
-               min_score: float = 0.30,  # Lowered to 0.30 to allow multiple code chunks to pass
-               max_tokens: int = 4000,
+               min_score: float = None,
+               max_tokens: int = None,
                alpha: float = 0.7, beta: float = 0.3):
         
+        # Override with parameter inputs if explicitly provided, otherwise utilize global env config limits
+        score_threshold = min_score if min_score is not None else self.default_min_score
+        token_limit = max_tokens if max_tokens is not None else self.default_max_tokens
+
         query_embedding = self.embedding_service.generate_embedding(query)
         
         results = self.collection.search(
@@ -31,7 +46,7 @@ class RetrievalService:
         for hit in results[0]:
             text_score = hit.distance
             
-            if text_score < min_score:
+            if text_score < score_threshold:
                 continue
 
             doc = hit.entity.get("content")
@@ -39,7 +54,7 @@ class RetrievalService:
             filename = hit.entity.get("filename")
 
             token_count = len(doc.split())
-            if total_tokens + token_count > max_tokens:
+            if total_tokens + token_count > token_limit:
                 break
 
             meta_score = 0.0

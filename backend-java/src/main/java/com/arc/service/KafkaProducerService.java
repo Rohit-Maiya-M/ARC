@@ -11,7 +11,11 @@ public class KafkaProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     public void sendBatch(String jsonBatch) {
-        kafkaTemplate.send("arc.index", jsonBatch);
-        System.out.println("✅ Sent batch to Kafka: " + jsonBatch);
+        try {
+            kafkaTemplate.send("arc.index", jsonBatch).get();
+            System.out.println("SUCCESS");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

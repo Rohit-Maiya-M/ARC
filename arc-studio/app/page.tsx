@@ -441,8 +441,10 @@ export default function ArcStudioDashboard() {
                   customSetup={{ entry: activeFile }}
                   theme="dark"
                   files={virtualFiles}
-                  activeFile={activeFile}
-                  options={{ visibleFiles: [activeFile] }}
+                  options={{ 
+                    visibleFiles: [activeFile],
+                    activeFile: activeFile
+                  }}
                   style={{ height: "100%", display: "flex", flexDirection: "row", width: "100%" }}
                 >
                   <SandpackLayout 
