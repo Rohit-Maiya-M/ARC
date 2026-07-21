@@ -1,6 +1,7 @@
 # Environment and secrets
 .env
 *.env
+.env.production
 !.env.example
 
 # Python
@@ -31,8 +32,6 @@ Thumbs.db
 
 # Local repository uploads / generated data
 /repositories/
-/models/
-
 ### application.properties ###
 backend-java/src/main/resources/application.properties
 
@@ -47,8 +46,10 @@ ai-service/verify.py
 ### Temporary files and directories ###
 docker/
 frontend/
-models/
 scripts/
+
+# Local embedding models
+models/
 
 ARC-Repositories/*
 !ARC-Repositories/.gitkeep
