@@ -10,20 +10,44 @@ import java.util.UUID;
 
 public class SemanticChunker {
 
+    private static final int CHUNK_SIZE = 220;
+
+    private static final int OVERLAP = 40;
+
     public static List<CodeChunk> chunkRepositoryFile(
             RepositoryFile repositoryFile
-    ){
+    ) {
 
         String content = repositoryFile.getContent();
-        int chunkSize = 500;
-        int overlap = 100;
+
+        if (content == null || content.isBlank()) {
+            return List.of();
+        }
+
+        String[] words = content
+                .trim()
+                .split("\\s+");
 
         List<CodeChunk> chunks = new ArrayList<>();
-        String[] words = content.split("\\s+");
 
-        for(int start=0; start < words.length; start += (chunkSize - overlap)){
-            int end = Math.min(start + chunkSize, words.length);
-            String chunkContent = String.join(" ", Arrays.copyOfRange(words, start, end));
+        int step = CHUNK_SIZE - OVERLAP;
+
+        for (int start = 0; start < words.length; start += step) {
+
+            int end = Math.min(start + CHUNK_SIZE, words.length);
+
+            if (end <= start) {
+                break;
+            }
+
+            String chunkContent = String.join(
+                    " ",
+                    Arrays.copyOfRange(words, start, end)
+            ).trim();
+
+            if (chunkContent.isBlank()) {
+                continue;
+            }
 
             CodeChunk chunk = CodeChunk.builder()
                     .chunkId(UUID.randomUUID().toString())
@@ -34,10 +58,13 @@ public class SemanticChunker {
                     .build();
 
             chunks.add(chunk);
-        }
-        
-        return chunks;
 
+            if (end == words.length) {
+                break;
+            }
+        }
+
+        return chunks;
     }
 
 }

@@ -185,10 +185,10 @@ public class RepositoryService {
                     .repositoryId(savedRepository.getId())
                     .content(chunk.getContent())
                     .metadata(Map.of(
-                            "filename", chunk.getFileName(),
-                            "extension", chunk.getExtension(),
-                            "content", chunk.getContent()
-                    ))
+                        "filename", chunk.getFileName(),
+                        "path", chunk.getRelativePath(),
+                        "extension", chunk.getExtension()
+                     ))
                     .build();
             batch.add(request);
 
