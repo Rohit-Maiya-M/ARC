@@ -10,9 +10,9 @@ import java.util.UUID;
 
 public class SemanticChunker {
 
-    private static final int CHUNK_SIZE = 220;
-
-    private static final int OVERLAP = 40;
+    private static final int CHUNK_SIZE = 150;
+    
+    private static final int OVERLAP = 30;
 
     public static List<CodeChunk> chunkRepositoryFile(
             RepositoryFile repositoryFile

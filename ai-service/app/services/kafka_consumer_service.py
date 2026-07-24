@@ -5,8 +5,7 @@ from kafka import KafkaConsumer
 from app.services.vector_store_service import VectorStoreService
 
 class KafkaConsumerService:
-    def __init__(self, topic: str = None, bootstrap_servers: list = None):
-        # Resolve array elements from env configurations cleanly
+    def __init__(self, topic: str = None, bootstrap_servers: list = None):        
         env_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
         default_servers = [env_servers] if env_servers else ["arc-kafka:9092"]
         
@@ -19,8 +18,7 @@ class KafkaConsumerService:
         self.thread = None
 
     def ensure_services(self):
-        if self.vector_store_service is None:
-            # Let VectorStoreService load its own parameterized parameters
+        if self.vector_store_service is None:            
             self.vector_store_service = VectorStoreService()
     
     def _consume_messages(self):

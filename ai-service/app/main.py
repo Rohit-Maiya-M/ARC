@@ -1,6 +1,5 @@
 # app/main.py
 from fastapi import FastAPI, Query
-from app.services.embedding_service import EmbeddingService
 from app.services.vector_store_service import VectorStoreService
 from app.services.retrieval_service import RetrievalService
 from app.services.rag_service import RAGService
@@ -17,11 +16,9 @@ from app.models.index_batch_request import IndexBatchRequest
 
 app = FastAPI()
 
-# Initialize lightweight services
-embedding_service = EmbeddingService()
 gemini = GeminiService()
 
-# Lazy init for Milvus services
+
 vector_store_service = None
 retrieval_service = None
 rag_service = None
@@ -38,11 +35,6 @@ def ensure_services():
 def home():
     return {"message": "ARC AI Service Running"}
 
-@app.post("/ask")
-def ask(request: AskRequest, top_k: int = Query(5)):
-    ensure_services()
-    answer = rag_service.ask(request.repository_id, request.question, top_k=top_k)
-    return {"answer": answer}
 
 @app.post("/summary")
 def summarize_repository(request: SummaryRequest):

@@ -1,6 +1,5 @@
 from app.services.vector_store_service import VectorStoreService
 from app.services.retrieval_service import RetrievalService
-from app.services.hybrid_retrieval_service import HybridRetrievalService
 from pymilvus import connections, utility, Index
 
 def main():    

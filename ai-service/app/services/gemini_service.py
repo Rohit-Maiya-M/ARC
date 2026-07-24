@@ -1,9 +1,7 @@
 import os
-from dotenv import load_dotenv
 import google.genai as genai
 from tenacity import retry, wait_exponential, stop_after_attempt
 
-load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:

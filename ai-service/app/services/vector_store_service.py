@@ -11,8 +11,7 @@ from pymilvus import (
     Index,
 )
 
-from app.services.embedding_service import EmbeddingService
-
+from app.embeddings.embedder import Embedder
 
 class VectorStoreService:
 
@@ -22,11 +21,7 @@ class VectorStoreService:
         collection_name: str = None,
     ):
 
-        self.embedding_service = EmbeddingService()
-
-        # ----------------------------------------------------
-        # Environment
-        # ----------------------------------------------------
+        self.embedder = Embedder()
 
         self.milvus_host = os.getenv(
             "MILVUS_HOST",
@@ -52,10 +47,6 @@ class VectorStoreService:
                 "ims_embeddings"
             )
         )
-
-        # ----------------------------------------------------
-        # Connect
-        # ----------------------------------------------------
 
         connections.connect(
             alias="default",
@@ -146,14 +137,12 @@ class VectorStoreService:
 
         self.collection.load()
 
-    # ======================================================
-    # Batch Storage
-    # ======================================================
 
     def store_batch(
-        self,
-        requests: list,
-    ):
+    self,
+    requests: list,
+    flush: bool = False,
+):
 
         if not requests:
             print("No requests received.")
@@ -161,124 +150,65 @@ class VectorStoreService:
 
         total_start = time.perf_counter()
 
-        print(
-            "\n"
-            + "=" * 90
-        )
-
-        print(
-            f"PROCESSING BATCH ({len(requests)} chunks)"
-        )
-
+        print("\n" + "=" * 90)
+        print(f"PROCESSING BATCH ({len(requests)} chunks)")
         print("=" * 90)
-
-        # --------------------------------------------------
-        # Content Embeddings
-        # --------------------------------------------------
+        
 
         start = time.perf_counter()
 
         texts = [
-            r["content"]
-            for r in requests
+            request["content"]
+            for request in requests
         ]
 
-        embeddings = (
-            self.embedding_service.generate_batch_embeddings(
-                texts
-            )
-        )
+        embeddings = self.embedder.embed_batch(texts)
 
         print(
             f"✅ Content embeddings : {time.perf_counter() - start:.3f} sec"
         )
 
-        # --------------------------------------------------
-        # Metadata Embeddings
-        # --------------------------------------------------
-
         start = time.perf_counter()
 
         metadata_list = [
-
             {
-                **r.get(
-                    "metadata",
-                    {}
-                ),
-
-                "repository_id": r["repository_id"],
-                "chunk_id": r["chunk_id"],
+                **request.get("metadata", {}),
+                "repository_id": request["repository_id"],
+                "chunk_id": request["chunk_id"],
             }
-
-            for r in requests
-
+            for request in requests
         ]
 
-        meta_embeddings = (
-            self.embedding_service.generate_batch_metadata_embeddings(
-                metadata_list
-            )
+        meta_embeddings = self.embedder.embed_metadata_batch(
+            metadata_list
         )
 
         print(
             f"✅ Metadata embeddings : {time.perf_counter() - start:.3f} sec"
         )
 
-        # --------------------------------------------------
-        # Prepare Rows
-        # --------------------------------------------------
-
         start = time.perf_counter()
 
-        rows = []
-
-        for request, embedding, meta_embedding in zip(
+        rows = [
+            {
+                "chunk_id": request["chunk_id"],
+                "repository_id": request["repository_id"],
+                "content": request["content"],
+                "filename": metadata.get("filename", ""),
+                "embedding": embedding,
+                "meta_embedding": meta_embedding,
+            }
+            for request, metadata, embedding, meta_embedding in zip(
                 requests,
+                metadata_list,
                 embeddings,
                 meta_embeddings,
-        ):
-
-            metadata = request.get(
-                "metadata",
-                {}
             )
-
-            rows.append(
-
-                {
-
-                    "chunk_id":
-                        request["chunk_id"],
-
-                    "repository_id":
-                        request["repository_id"],
-
-                    "content":
-                        request["content"],
-
-                    "filename":
-                        metadata.get(
-                            "filename",
-                            ""
-                        ),
-
-                    "embedding":
-                        embedding,
-
-                    "meta_embedding":
-                        meta_embedding,
-                }
-
-            )
+        ]
 
         print(
             f"✅ Row preparation : {time.perf_counter() - start:.3f} sec"
-        )
-
-        # --------------------------------------------------
-        # Insert
-        # --------------------------------------------------
+        )        
 
         start = time.perf_counter()
 
@@ -288,17 +218,15 @@ class VectorStoreService:
             f"✅ Milvus insert : {time.perf_counter() - start:.3f} sec"
         )
 
-        # --------------------------------------------------
-        # Flush
-        # --------------------------------------------------
+        if flush:
 
-        start = time.perf_counter()
+            start = time.perf_counter()
 
-        self.collection.flush()
+            self.collection.flush()
 
-        print(
-            f"✅ Milvus flush : {time.perf_counter() - start:.3f} sec"
-        )
+            print(
+                f"✅ Milvus flush : {time.perf_counter() - start:.3f} sec"
+            )
 
         print(
             f"\n🎯 TOTAL store_batch() : {time.perf_counter() - total_start:.3f} sec"
@@ -306,16 +234,9 @@ class VectorStoreService:
 
         print("=" * 90 + "\n")
 
-    # ======================================================
-    # Utility
-    # ======================================================
-
     def count_documents(self):
         return self.collection.num_entities
 
-    # ======================================================
-    # Retrieval
-    # ======================================================
 
     def get_repository_documents(
         self,
@@ -374,37 +295,4 @@ class VectorStoreService:
         return repository_documents.get(
             "documents",
             []
-        )
-
-    def store_embedding(
-        self,
-        chunk_id: str,
-        repository_id: int,
-        content: str,
-        embedding: list,
-        metadata: dict,
-    ):
-        metadata = {
-            **metadata,
-            "repository_id": repository_id,
-            "chunk_id": chunk_id,
-        }
-
-        meta_embedding = self.embedding_service.generate_metadata_embedding(
-            metadata
-        )
-
-        self.collection.insert(
-            [
-                {
-                    "chunk_id": chunk_id,
-                    "repository_id": repository_id,
-                    "content": content,
-                    "filename": metadata.get("filename", ""),
-                    "embedding": embedding,
-                    "meta_embedding": meta_embedding,
-                }
-            ]
-        )
-
-        self.collection.flush()
+        )    

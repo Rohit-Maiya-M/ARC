@@ -1,16 +1,14 @@
-version: '3.8'
-
 services:
   # ----------------------------------------------------
-  # 1. APPLICATION DATA STORES (Stored inside ARC Folder)
+  # 1. APPLICATION DATA STORES
   # ----------------------------------------------------
   postgres:
     image: postgres:15-alpine
     container_name: arc-postgres
     environment:
-      POSTGRES_DB: arc_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: sole@2006
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -20,7 +18,7 @@ services:
     restart: always
 
   # ----------------------------------------------------
-  # 2. VECTOR STORAGE INFRASTRUCTURE (Milvus v2.4.0)
+  # 2. VECTOR STORAGE INFRASTRUCTURE
   # ----------------------------------------------------
   etcd:
     image: quay.io/coreos/etcd:v3.5.0
@@ -37,8 +35,8 @@ services:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     container_name: milvus-minio
     environment:
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     command: server /minio_data
     ports:
       - "9000:9000"
@@ -55,10 +53,10 @@ services:
       - "19530:19530"
       - "9091:9091"
     environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      ETCD_ENDPOINTS: ${ETCD_ENDPOINTS}
+      MINIO_ADDRESS: ${MINIO_ADDRESS}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
     depends_on:
       - etcd
       - minio
@@ -69,75 +67,96 @@ services:
     restart: always
 
   # ----------------------------------------------------
-  # 3. MESSAGE BROKER STREAMING INTERFACE (Kafka v7.5.0)
+  # 3. KAFKA
   # ----------------------------------------------------
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: arc-zookeeper
+
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+
     ports:
       - "2181:2181"
+
     volumes:
-      - ./.containers_data/zookeeper:/var/lib/zookeeper
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+
+    healthcheck:    
+      test: ["CMD-SHELL", "echo srvr | nc -w 2 localhost 2181 | grep Mode"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+      
     networks:
       - arc-network
 
-  arc-kafka:  # Changed service key to arc-kafka for perfect matching
+  arc-kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: arc-kafka
+
+    restart: unless-stopped
+
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+
     ports:
       - "9092:9092"
+
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Added KAFKA_LISTENERS so Kafka binds to these ports inside the container
-      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://arc-kafka:29092,EXTERNAL://localhost:9092
-      # Fixed the maps to match INTERNAL and EXTERNAL
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_BROKER_ID: ${KAFKA_BROKER_ID}
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+      KAFKA_LISTENERS: ${KAFKA_LISTENERS}
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: ${KAFKA_LISTENER_SECURITY_PROTOCOL_MAP}
+      KAFKA_INTER_BROKER_LISTENER_NAME: ${KAFKA_INTER_BROKER_LISTENER_NAME}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR}
+
     volumes:
-      - ./.containers_data/kafka:/var/lib/kafka/data
+      - kafka-data:/var/lib/kafka/data
+
     networks:
       - arc-network
 
   # ----------------------------------------------------
-  # 4. APPLICATION SERVICES ENVIRONMENT
+  # 4. AI SERVICE
   # ----------------------------------------------------
   ai-service:
     build:
       context: ./ai-service
     container_name: arc-ai-service
     ports:
-      - "8000:8000"    
+      - "8000:8000"
     environment:
-      - MILVUS_HOST=${MILVUS_HOST:-milvus}
-      - MILVUS_PORT=${MILVUS_PORT:-19530}
-      - MILVUS_COLLECTION_NAME=${MILVUS_COLLECTION_NAME:-ims_embeddings}
-      - VECTOR_DIM=${VECTOR_DIM:-1024}
-      # Updated default server address to arc-kafka
-      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-arc-kafka:29092}
-      - KAFKA_INDEX_TOPIC=${KAFKA_INDEX_TOPIC:-arc.index}
-      - KAFKA_CONSUMER_GROUP=${KAFKA_CONSUMER_GROUP:-arc-consumer-group}
-      - GEMINI_API_KEY=${GEMINI_API_KEY} 
-      - EMBEDDING_MODEL_PATH=/models/bge-m3
-      - RETRIEVAL_MIN_SCORE=${RETRIEVAL_MIN_SCORE:-0.30}
-      - RETRIEVAL_MAX_TOKENS=${RETRIEVAL_MAX_TOKENS:-4000}
+      MILVUS_HOST: ${MILVUS_HOST}
+      MILVUS_PORT: ${MILVUS_PORT}
+      MILVUS_COLLECTION_NAME: ${MILVUS_COLLECTION_NAME}
+      VECTOR_DIM: ${VECTOR_DIM}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_INDEX_TOPIC: ${KAFKA_INDEX_TOPIC}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      LOCAL_EMBEDDING_MODEL_PATH: ${LOCAL_EMBEDDING_MODEL_PATH}
+      ONNX_MODEL_PATH: ${ONNX_MODEL_PATH}
+      RETRIEVAL_MIN_SCORE: ${RETRIEVAL_MIN_SCORE}
+      RETRIEVAL_MAX_TOKENS: ${RETRIEVAL_MAX_TOKENS}      
     depends_on:
       - milvus
-      - arc-kafka  # Updated dependency name
+      - arc-kafka
     volumes:
       - ./ai-service:/app
-      - C:\Models\bge-m3:/models/bge-m3
+      - ./models/bge-m3:/models/bge-m3:ro
     networks:
       - arc-network
     restart: on-failure
 
+  # ----------------------------------------------------
+  # 5. SPRING BOOT
+  # ----------------------------------------------------
   backend-java:
     build:
       context: ./backend-java
@@ -145,16 +164,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/arc_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=sole@2006
-      # Updated server address to arc-kafka
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=arc-kafka:29092
-      - SETTINGS_PATHS_STORAGE_PATH=/app/storage
-      - SETTINGS_PATHS_ASK_GENERATIVE_AI_URL=http://ai-service:8000/generate/api
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+      SETTINGS_PATHS_STORAGE_PATH: ${SETTINGS_PATHS_STORAGE_PATH}
+      SETTINGS_PATHS_ASK_GENERATIVE_AI_URL: ${SETTINGS_PATHS_ASK_GENERATIVE_AI_URL}
     depends_on:
       - postgres
-      - arc-kafka  # Updated dependency name
+      - arc-kafka
       - ai-service
     volumes:
       - ./ARC-Repositories:/app/storage
@@ -162,16 +180,17 @@ services:
       - arc-network
     restart: on-failure
 
+  # ----------------------------------------------------
+  # 6. FRONTEND
+  # ----------------------------------------------------
   arc-studio:
     build:
       context: ./arc-studio
       args:
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: arc-studio-frontend
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
     depends_on:
       - backend-java
     networks:
@@ -181,3 +200,8 @@ services:
 networks:
   arc-network:
     driver: bridge
+
+volumes:
+  kafka-data:
+  zookeeper-data:
+  zookeeper-log:

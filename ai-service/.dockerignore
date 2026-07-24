@@ -1,6 +1,7 @@
 .venv310/
 aider-env/
 venv/
+.venv-onnx/
 .venv/
 __pycache__/
 *.pyc
