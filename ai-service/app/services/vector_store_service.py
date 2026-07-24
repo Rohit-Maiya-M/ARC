@@ -36,7 +36,7 @@ class VectorStoreService:
         self.dim = dim or int(
             os.getenv(
                 "VECTOR_DIM",
-                "1024"
+                "768"
             )
         )
 

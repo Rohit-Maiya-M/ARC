@@ -1,9 +1,17 @@
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
 from transformers import AutoTokenizer
 
-model_path = os.getenv("LOCAL_EMBEDDING_MODEL_PATH")
+ROOT = Path(__file__).parents[3]
+load_dotenv(ROOT / ".env")
+
+model_path = Path(os.getenv("LOCAL_EMBEDDING_MODEL_PATH"))
+
+if not model_path.exists():
+    model_path = ROOT / "models" / "bge-base-en-v1.5"
+
+model_path = str(model_path)
 
 if not model_path:
     raise RuntimeError("LOCAL_EMBEDDING_MODEL_PATH is not set.")

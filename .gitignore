@@ -50,6 +50,7 @@ scripts/
 
 # Local embedding models
 models/
+docs/
 
 ARC-Repositories/*
 !ARC-Repositories/.gitkeep

@@ -9,7 +9,7 @@ from app.embeddings.engine import getSession
 from app.embeddings.tokenizer import getTokenizer
 
 
-MAX_LENGTH = int(os.getenv("EMBEDDING_MAX_LENGTH", "1024"))
+MAX_LENGTH = int(os.getenv("EMBEDDING_MAX_LENGTH", "512"))
 ENABLE_TOKEN_DEBUG = (
     os.getenv("ENABLE_TOKEN_DEBUG", "false").lower() == "true"
 )
@@ -28,7 +28,12 @@ load_elapsed = time.perf_counter() - load_start
 print(f"Tokenizer id        : {id(tokenizer)}")
 print(f"Session id          : {id(session)}")
 print(f"Model load time     : {load_elapsed:.2f} sec")
-print(f"Embedding dimension : 1024")
+embedding_dim = (
+    session.get_outputs()[0].shape[-1]
+    if session.get_outputs()[0].shape[-1] is not None
+    else "Unknown"
+)
+print(f"Embedding dimension : {embedding_dim}")
 print(f"CPU count           : {os.cpu_count()}")
 print(f"ONNX Runtime        : {ort.__version__}")
 print(f"Platform            : {platform.platform()}")
@@ -74,17 +79,38 @@ class Embedder:
             f"Sequence length : {inputs['input_ids'].shape[1]}"
         )
 
+        session_inputs = {
+            "input_ids": inputs["input_ids"],
+            "attention_mask": inputs["attention_mask"],
+        }
+
+        if "token_type_ids" in inputs:
+            session_inputs["token_type_ids"] = inputs["token_type_ids"]
+
         outputs = self.session.run(
             None,
-            {
-                "input_ids": inputs["input_ids"],
-                "attention_mask": inputs["attention_mask"]
-            }
+            session_inputs
         )
 
         t2 = time.perf_counter()
 
-        embeddings = outputs[1]
+        output_names = [o.name for o in self.session.get_outputs()]
+
+        if "sentence_embedding" in output_names:
+            sentence_embedding_index = output_names.index("sentence_embedding")
+            embeddings = outputs[sentence_embedding_index]
+
+        elif "last_hidden_state" in output_names:
+            last_hidden_state_index = output_names.index("last_hidden_state")
+            last_hidden_state = outputs[last_hidden_state_index]
+
+            # CLS Pooling
+            embeddings = last_hidden_state[:, 0, :]
+
+        else:
+            raise RuntimeError(
+                f"Unsupported ONNX outputs: {output_names}"
+            )
 
         norms = np.linalg.norm(
             embeddings,
@@ -108,6 +134,7 @@ class Embedder:
             return embeddings[0]
 
         return embeddings
+
 
     def embed(self, text: str):
         return self._encode(text).tolist()

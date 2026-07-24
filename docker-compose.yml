@@ -143,13 +143,15 @@ services:
       LOCAL_EMBEDDING_MODEL_PATH: ${LOCAL_EMBEDDING_MODEL_PATH}
       ONNX_MODEL_PATH: ${ONNX_MODEL_PATH}
       RETRIEVAL_MIN_SCORE: ${RETRIEVAL_MIN_SCORE}
-      RETRIEVAL_MAX_TOKENS: ${RETRIEVAL_MAX_TOKENS}      
+      RETRIEVAL_MAX_TOKENS: ${RETRIEVAL_MAX_TOKENS}   
+      EMBEDDING_MAX_LENGTH: ${EMBEDDING_MAX_LENGTH}   
+      ENABLE_TOKEN_DEBUG: ${ENABLE_TOKEN_DEBUG}
     depends_on:
       - milvus
       - arc-kafka
     volumes:
       - ./ai-service:/app
-      - ./models/bge-m3:/models/bge-m3:ro
+      - ./models/bge-base-en-v1.5:/models/bge-base-en-v1.5:ro
     networks:
       - arc-network
     restart: on-failure

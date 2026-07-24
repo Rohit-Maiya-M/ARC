@@ -1,8 +1,18 @@
 import os
 import multiprocessing
 import onnxruntime as ort
+from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).parents[3]
+load_dotenv(ROOT / ".env")
 
 model_path = os.getenv("ONNX_MODEL_PATH")
+
+if model_path and not Path(model_path).exists():
+    local_model = ROOT / "models" / "bge-base-en-v1.5" / "onnx" / "model.onnx"
+    if local_model.exists():
+        model_path = str(local_model)
 
 cpu_count = multiprocessing.cpu_count()
 

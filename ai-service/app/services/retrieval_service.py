@@ -10,7 +10,7 @@ class RetrievalService:
         self.milvus_host = os.getenv("MILVUS_HOST", "localhost")
         self.milvus_port = os.getenv("MILVUS_PORT", "19530")
         self.collection_name = collection_name or os.getenv("MILVUS_COLLECTION_NAME", "ims_embeddings")
-        self.dim = dim or int(os.getenv("VECTOR_DIM", "1024"))
+        self.dim = dim or int(os.getenv("VECTOR_DIM", "768"))
                 
         self.default_min_score = float(os.getenv("RETRIEVAL_MIN_SCORE", "0.30"))
         self.default_max_tokens = int(os.getenv("RETRIEVAL_MAX_TOKENS", "4000"))
