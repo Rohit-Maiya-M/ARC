@@ -6,9 +6,9 @@
 
 ## ✨ Overview
 
-ARC (Autonomous Repository Companion) is an AI-powered developer assistant that indexes entire software repositories, performs semantic code search, and generates context-aware responses using Retrieval-Augmented Generation (RAG).
+ARC (Autonomous Repository Companion) is an AI-powered developer assistant that indexes software repositories, performs semantic code search, and generates context-aware responses using Retrieval-Augmented Generation (RAG).
 
-Unlike traditional keyword search, ARC understands the **semantic meaning** of source code, documentation, SQL files, configuration files, and project structure.
+The project is designed for **local-first AI development**, combining semantic search, vector databases, ONNX Runtime, and local LLM inference into a scalable microservice architecture.
 
 ---
 
@@ -18,7 +18,6 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
                           +----------------------+
                           |   React Frontend     |
                           +----------+-----------+
-                                     |
                                      |
                                      ▼
                           +----------------------+
@@ -37,7 +36,7 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
                  |                                       |
                  |                                       |
                  ▼                                       |
-         BAAI BGE-M3 (ONNX Runtime)                      |
+      BAAI BGE-Base-en-v1.5 (ONNX Runtime)               |
                  |                                       |
                  +---------------------------------------+
                                  |
@@ -49,25 +48,16 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
 
 # ⚡ Features
 
-✅ Semantic Code Search
-
-✅ Repository Indexing
-
-✅ Retrieval-Augmented Generation (RAG)
-
-✅ Hybrid Content + Metadata Search
-
-✅ Milvus Vector Database
-
-✅ Kafka-based Indexing Pipeline
-
-✅ ONNX Runtime Optimized Embeddings
-
-✅ Local LLM Inference
-
-✅ Spring Boot Backend
-
-✅ React Frontend
+- ✅ Semantic Code Search
+- ✅ Repository Indexing
+- ✅ Retrieval-Augmented Generation (RAG)
+- ✅ Hybrid Content + Metadata Retrieval
+- ✅ Kafka-based Indexing Pipeline
+- ✅ Milvus Vector Database
+- ✅ ONNX Runtime Optimized Inference
+- ✅ Local LLM Integration
+- ✅ Spring Boot Backend
+- ✅ React Frontend
 
 ---
 
@@ -79,8 +69,6 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
 - Vite
 - Tailwind CSS
 
----
-
 ## ☕ Backend
 
 - Java 21
@@ -88,8 +76,6 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
 - Spring Security
 - Spring Data JPA
 - PostgreSQL
-
----
 
 ## 🤖 AI Service
 
@@ -108,7 +94,7 @@ Unlike traditional keyword search, ARC understands the **semantic meaning** of s
 ### Embedding Model
 
 ```text
-BAAI/bge-m3
+BAAI/bge-base-en-v1.5
 ```
 
 ### Inference Engine
@@ -120,23 +106,40 @@ ONNX Runtime (CPU)
 ### Embedding Dimension
 
 ```text
-1024
+768
 ```
 
-### Output
+### Maximum Context Length
 
 ```text
-sentence_embedding
+512 Tokens
+```
+
+### ONNX Output
+
+```text
+last_hidden_state
+```
+
+### Pooling Strategy
+
+```text
+CLS Pooling
+embedding = last_hidden_state[:, 0, :]
 ```
 
 ### Optimization Techniques
 
 - ✅ Singleton Tokenizer
 - ✅ Singleton ONNX Session
-- ✅ Dynamic Batch Encoding
+- ✅ Dynamic Input Detection
+- ✅ Dynamic Output Detection
+- ✅ Automatic `token_type_ids` Support
+- ✅ CLS Pooling
+- ✅ Batch Inference
 - ✅ L2 Normalization
 - ✅ ONNX Runtime Graph Optimization
-- ✅ Multi-threaded CPU Inference
+- ✅ Multi-threaded CPU Execution
 
 ---
 
@@ -193,27 +196,25 @@ Milvus Similarity Search
       └────────► Metadata Score
                      │
                      ▼
-           Weighted Final Score
+            Weighted Final Score
                      │
                      ▼
-              Top Ranked Results
+             Top Ranked Chunks
                      │
                      ▼
                DeepSeek LLM
 ```
 
-The final ranking combines:
+Ranking combines:
 
-- 🎯 Semantic similarity
-- 📄 Metadata similarity
-
-to improve retrieval accuracy.
+- 🎯 Semantic Similarity
+- 📄 Metadata Similarity
 
 ---
 
 # ⚙️ ONNX Runtime Optimizations
 
-The embedding engine includes:
+The embedding engine uses:
 
 - 🚀 Singleton Model Loading
 - 🚀 Singleton Tokenizer
@@ -221,7 +222,9 @@ The embedding engine includes:
 - 🚀 ORT_ENABLE_ALL Graph Optimization
 - 🚀 CPU Execution Provider
 - 🚀 Dynamic Batch Processing
-- 🚀 Normalized Embeddings
+- 🚀 Automatic Input Adaptation
+- 🚀 Automatic Output Adaptation
+- 🚀 L2 Normalized Embeddings
 
 ---
 
@@ -268,7 +271,7 @@ LLM_MODEL_PATH=
 LOCAL_EMBEDDING_MODEL_PATH=
 ONNX_MODEL_PATH=
 
-VECTOR_DIM=1024
+VECTOR_DIM=768
 
 MILVUS_HOST=
 MILVUS_PORT=
@@ -278,20 +281,20 @@ KAFKA_BOOTSTRAP_SERVERS=
 POSTGRES_HOST=
 POSTGRES_PORT=
 
-EMBEDDING_MAX_LENGTH=1024
+EMBEDDING_MAX_LENGTH=512
 ```
 
 ---
 
 # ▶️ Running ARC
 
-Start the complete system
+Start all services
 
 ```bash
 docker compose up -d
 ```
 
-Stop the system
+Stop all services
 
 ```bash
 docker compose down
@@ -299,28 +302,43 @@ docker compose down
 
 ---
 
-# 📈 Performance Optimizations
+# 📈 Performance
 
-The BGE-M3 pipeline includes:
+### Previous Embedding Model
 
-- ⚡ ONNX Runtime Optimizations
-- ⚡ Dynamic Batch Encoding
-- ⚡ Multi-threaded CPU Inference
-- ⚡ Cached Tokenizer
-- ⚡ Cached ONNX Session
-- ⚡ Optimized Milvus Batch Inserts
+| Model | Embedding Size | Typical Batch Time |
+|---------|---------------|-------------------:|
+| BGE-M3 | 1024 | ~220 sec |
+
+### Current Embedding Model
+
+| Model | Embedding Size | Typical Batch Time |
+|---------|---------------|-------------------:|
+| BGE-Base-en-v1.5 | 768 | ~24 sec |
+
+### Improvements
+
+- ⚡ ~9× Faster Repository Indexing
+- ⚡ Reduced Embedding Dimension (1024 → 768)
+- ⚡ Reduced Metadata Embedding Time
+- ⚡ Lower Memory Usage
+- ⚡ Better CPU Inference Performance
+
+### Trade-off
+
+The migration significantly improves indexing performance while introducing a slight decrease in semantic retrieval quality. Future work includes improving retrieval quality through reranking and better chunking strategies.
 
 ---
 
 # 🎯 Roadmap
 
-- ⏳ Faster Embedding Models
-- ⏳ Hybrid Lexical + Semantic Search
 - ⏳ Cross-Encoder Reranking
+- ⏳ Hybrid Lexical + Semantic Search
 - ⏳ Better Chunking Strategy
-- ⏳ Automatic Code Editing
 - ⏳ AI Response Cache
+- ⏳ Automatic Code Editing
 - ⏳ Multi-Repository Search
+- ⏳ Improved Retrieval Quality
 
 ---
 
