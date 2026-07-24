@@ -1,119 +1,329 @@
-# ARC / Autonomous Repository Companion
+# 🚀 ARC — Autonomous Repository Companion
 
-## Overview
+> **AI-powered Repository Understanding, Semantic Code Search & Retrieval-Augmented Generation (RAG)**
 
-A multi-service repository that combines:
+---
 
-- ai-service — FastAPI AI backend that indexes repositories, generates embeddings, and serves RAG/LLM queries.
-- backend-java — Spring Boot Java backend using Spring WebMVC, Spring Security, Spring Data JPA, and PostgreSQL runtime support.
-- frontend — React + Vite UI with Tailwind integration.
-- docker — Docker container definitions for local deployment.
-- models, repositories, `indexed/` — storage for model files, repository data, and indexed artifacts.
+## ✨ Overview
 
-## Architecture
+ARC (Autonomous Repository Companion) is an AI-powered developer assistant that indexes entire software repositories, performs semantic code search, and generates context-aware responses using Retrieval-Augmented Generation (RAG).
 
-- AI service drives vector search and retrieval over repository data.
-- A local `llama-server` binary is launched from run_all.py.
-- The Java backend exposes application APIs.
-- The React frontend consumes backend endpoints and user flows.
+Unlike traditional keyword search, ARC understands the **semantic meaning** of source code, documentation, SQL files, configuration files, and project structure.
 
-## Prerequisites
+---
 
-- Python 3.10+ (project uses .venv310)
+# 🏗️ System Architecture
+
+```text
+                          +----------------------+
+                          |   React Frontend     |
+                          +----------+-----------+
+                                     |
+                                     |
+                                     ▼
+                          +----------------------+
+                          | Spring Boot Backend  |
+                          +----------+-----------+
+                                     |
+                 REST APIs           |           Kafka
+                                     |
+                +--------------------+--------------------+
+                |                                         |
+                ▼                                         ▼
+      +----------------------+                +----------------------+
+      |   FastAPI AI Service |<-------------->|        Milvus        |
+      |                      |                |   Vector Database    |
+      +----------+-----------+                +----------+-----------+
+                 |                                       |
+                 |                                       |
+                 ▼                                       |
+         BAAI BGE-M3 (ONNX Runtime)                      |
+                 |                                       |
+                 +---------------------------------------+
+                                 |
+                                 ▼
+                     DeepSeek Local LLM
+```
+
+---
+
+# ⚡ Features
+
+✅ Semantic Code Search
+
+✅ Repository Indexing
+
+✅ Retrieval-Augmented Generation (RAG)
+
+✅ Hybrid Content + Metadata Search
+
+✅ Milvus Vector Database
+
+✅ Kafka-based Indexing Pipeline
+
+✅ ONNX Runtime Optimized Embeddings
+
+✅ Local LLM Inference
+
+✅ Spring Boot Backend
+
+✅ React Frontend
+
+---
+
+# 🛠️ Tech Stack
+
+## 🎨 Frontend
+
+- React
+- Vite
+- Tailwind CSS
+
+---
+
+## ☕ Backend
+
 - Java 21
-- Node.js 18+ and npm
-- Git
-- PostgreSQL or compatible DB for backend runtime
-- DeepSeek `llama-server` binary and local model files
-- .env configured from .env.example
+- Spring Boot
+- Spring Security
+- Spring Data JPA
+- PostgreSQL
 
-## Setup
+---
 
-1. Copy environment file
-   ```powershell
-   cd ai-service
-   copy .env.example .env
-   ```
+## 🤖 AI Service
 
-2. Edit .env:
-   - `LLM_MODEL_PATH`
-   - `EMBEDDING_MODEL_PATH`
-   - `LLAMA_SERVER_PATH`
-   - `CHROMA_DB_PATH`
-   - `LLM_SERVER_PATH`
-   - Optional runtime tuning values
+- FastAPI
+- ONNX Runtime
+- HuggingFace Tokenizers
+- NumPy
+- Kafka
+- Milvus
+- DeepSeek Local LLM
 
-3. Prepare Python environment
-   ```powershell
-   cd ai-service
-   python -m venv .venv310
-   .venv310\Scripts\activate
-   pip install fastapi uvicorn python-dotenv chromadb pydantic
-   ```
+---
 
-4. Prepare frontend
-   ```powershell
-   cd frontend
-   npm install
-   ```
+# 🧠 Embedding Pipeline
 
-5. Prepare backend
-   - The backend uses Maven wrapper in backend-java
-   - Java version defined in pom.xml is `21`
+### Embedding Model
 
-## Run
-
-### Run all services together
-```powershell
-python scripts/run_all.py
+```text
+BAAI/bge-m3
 ```
 
-This launches:
-- DeepSeek llama server
-- FastAPI AI service
-- Spring Boot backend
+### Inference Engine
 
-### Run AI service only
-```powershell
-cd ai-service
-.venv310\Scripts\activate
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+```text
+ONNX Runtime (CPU)
 ```
 
-### Run backend only
-```powershell
-cd backend-java
-.\mvnw.cmd spring-boot:run
+### Embedding Dimension
+
+```text
+1024
 ```
 
-### Run frontend only
-```powershell
-cd frontend
-npm run dev
+### Output
+
+```text
+sentence_embedding
 ```
 
-## Key Endpoints
+### Optimization Techniques
 
-AI service exposes:
-- `GET /`
-- `POST /embed`
-- `POST /index`
-- `GET /count`
-- `POST /search`
-- `POST /ask`
-- `POST /summary`
+- ✅ Singleton Tokenizer
+- ✅ Singleton ONNX Session
+- ✅ Dynamic Batch Encoding
+- ✅ L2 Normalization
+- ✅ ONNX Runtime Graph Optimization
+- ✅ Multi-threaded CPU Inference
 
-## Useful Paths
+---
 
-- ai-service — AI service source and vector DB
-- backend-java — Java backend application
-- frontend — React/Vite frontend
-- docker — container deployment artifacts
-- run_all.py — orchestrates startup of all local services
+# 📦 Repository Indexing Pipeline
 
-## Notes
+```text
+Repository
+      │
+      ▼
+Repository Scanner
+      │
+      ▼
+Chunk Generator
+      │
+      ▼
+Kafka
+      │
+      ▼
+AI Service
+      │
+      ├────────► Content Embeddings
+      │
+      └────────► Metadata Embeddings
+                    │
+                    ▼
+               Milvus Storage
+```
 
-- pom.xml depends on Spring Boot 4.0.6 and Java 21.
-- package.json uses React 19, Vite, Tailwind, and ESLint.
-- ai-service expects model binaries and a running local llama server.
+Each indexed chunk stores:
 
+- 📄 Repository ID
+- 📂 File Path
+- 📃 Filename
+- 🏷️ Extension
+- 🧠 Content Embedding
+- 📝 Metadata Embedding
+- 📌 Chunk Information
+
+---
+
+# 🔍 Retrieval Pipeline
+
+```text
+User Query
+      │
+      ▼
+Query Embedding
+      │
+      ▼
+Milvus Similarity Search
+      │
+      ├────────► Content Score
+      │
+      └────────► Metadata Score
+                     │
+                     ▼
+           Weighted Final Score
+                     │
+                     ▼
+              Top Ranked Results
+                     │
+                     ▼
+               DeepSeek LLM
+```
+
+The final ranking combines:
+
+- 🎯 Semantic similarity
+- 📄 Metadata similarity
+
+to improve retrieval accuracy.
+
+---
+
+# ⚙️ ONNX Runtime Optimizations
+
+The embedding engine includes:
+
+- 🚀 Singleton Model Loading
+- 🚀 Singleton Tokenizer
+- 🚀 Singleton ONNX Session
+- 🚀 ORT_ENABLE_ALL Graph Optimization
+- 🚀 CPU Execution Provider
+- 🚀 Dynamic Batch Processing
+- 🚀 Normalized Embeddings
+
+---
+
+# 📁 Project Structure
+
+```text
+ARC
+│
+├── ai-service/
+│   ├── app/
+│   ├── tests/
+│   ├── models/
+│   └── Dockerfile
+│
+├── backend-java/
+│
+├── frontend/
+│
+├── models/
+│
+├── repositories/
+│
+└── docker-compose.yml
+```
+
+---
+
+# 📋 Prerequisites
+
+- 🐳 Docker Desktop
+- 🐳 Docker Compose
+- ☕ Java 21
+- 🐍 Python 3.10+
+- 📦 Node.js 18+
+- 🌿 Git
+
+---
+
+# 🔧 Environment Variables
+
+```env
+LLM_MODEL_PATH=
+
+LOCAL_EMBEDDING_MODEL_PATH=
+ONNX_MODEL_PATH=
+
+VECTOR_DIM=1024
+
+MILVUS_HOST=
+MILVUS_PORT=
+
+KAFKA_BOOTSTRAP_SERVERS=
+
+POSTGRES_HOST=
+POSTGRES_PORT=
+
+EMBEDDING_MAX_LENGTH=1024
+```
+
+---
+
+# ▶️ Running ARC
+
+Start the complete system
+
+```bash
+docker compose up -d
+```
+
+Stop the system
+
+```bash
+docker compose down
+```
+
+---
+
+# 📈 Performance Optimizations
+
+The BGE-M3 pipeline includes:
+
+- ⚡ ONNX Runtime Optimizations
+- ⚡ Dynamic Batch Encoding
+- ⚡ Multi-threaded CPU Inference
+- ⚡ Cached Tokenizer
+- ⚡ Cached ONNX Session
+- ⚡ Optimized Milvus Batch Inserts
+
+---
+
+# 🎯 Roadmap
+
+- ⏳ Faster Embedding Models
+- ⏳ Hybrid Lexical + Semantic Search
+- ⏳ Cross-Encoder Reranking
+- ⏳ Better Chunking Strategy
+- ⏳ Automatic Code Editing
+- ⏳ AI Response Cache
+- ⏳ Multi-Repository Search
+
+---
+
+# 📜 License
+
+This project is intended for educational and research purposes.
