@@ -3,50 +3,74 @@ class RepositoryPromptBuilder:
     @staticmethod
     def build(
         question: str,
-        context_chunks: list[str]
+        search_results,
     ):
-        context = "\n\n".join(
-            context_chunks
-        )
+
+        contexts = []
+
+        for hit in search_results:
+
+            entity = hit.entity
+
+            contexts.append(
+                f"""
+File: {entity.get("relative_path")}
+Symbol: {entity.get("symbol_path")}
+Lines: {entity.get("line_start")}-{entity.get("line_end")}
+
+{entity.get("content")}
+""".strip()
+            )
+
+        context = "\n\n".join(contexts)
 
         return f"""
 You are a repository analysis assistant.
 
-Context:
+Repository Context:
+
 {context}
 
 User Question:
+
 {question}
 
-Provide a concise answer in English.
-Do not repeat the prompt.
-Do not invent information.
-""" 
-
+Instructions:
+- Answer only using the repository context.
+- If the answer is not present, say you cannot determine it.
+- Do not invent information.
+- Keep the answer concise.
+"""
     @staticmethod
-    def build_summary(
-        context_chunks: list[str]
-    ):
-        context = "\n\n".join(
-            context_chunks
-        )
+    def build_summary(search_results):
+
+        contexts = []
+
+        for hit in search_results:
+
+            entity = hit.entity
+
+            contexts.append(entity.get("content"))
+
+        context = "\n\n".join(contexts)
 
         return f"""
-You are a senior software architect analyzing a source code repository.
+You are a senior software architect.
 
 Repository Context:
+
 {context}
 
-Write a concise repository summary in English.
+Write a concise repository summary.
+
 Include:
 - Project type
-- Main frameworks and libraries
-- Key dependencies
-- High-level architecture
+- Frameworks
+- Dependencies
+- Architecture
 - Important modules
 - Overall purpose
 
-Use only the repository context.
+Only use the repository context.
 Do not invent information.
-Do not repeat the prompt.
 """

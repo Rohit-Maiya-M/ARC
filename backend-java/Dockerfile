@@ -1,22 +1,31 @@
-# --- Stage 1: Build Phase (Updated to maven with JDK 21) ---
+# ----------------------------------------------------
+# Stage 1 : Build
+# ----------------------------------------------------
 FROM maven:3.9.6-eclipse-temurin-21 AS build
+
 WORKDIR /app
 
-# Copy pom.xml and source configurations
+# Copy only pom.xml first
 COPY pom.xml .
+
+# Download and cache Maven dependencies
+RUN mvn dependency:go-offline
+
+# Copy source code only after dependencies are cached
 COPY src ./src
 
-# Compile and package the jar, skipping unit test validation loops to accelerate builds
+# Build application
 RUN mvn clean package -DskipTests
 
-# --- Stage 2: Runtime Execution Phase (Updated to JRE 21) ---
+# ----------------------------------------------------
+# Stage 2 : Runtime
+# ----------------------------------------------------
 FROM eclipse-temurin:21-jre-jammy
+
 WORKDIR /app
 
-# Copy the compiled JAR artifact from the build layer
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose Spring Boot's internal web server port
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

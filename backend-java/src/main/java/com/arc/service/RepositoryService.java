@@ -1,16 +1,17 @@
 package com.arc.service;
 
-import com.arc.chunking.SemanticChunker;
+
 import com.arc.dto.*;
 import com.arc.entity.RepositoryEntity;
 import com.arc.entity.RepositoryStatus;
-import com.arc.models.CodeChunk;
+
 import com.arc.models.RepositoryFile;
 import com.arc.repository.RepositoryRepository;
 import com.arc.util.RepositoryFileReader;
 import com.arc.util.RepositoryScanner;
 import com.arc.util.ZipExtractor;
-
+import com.arc.service.KafkaProducerService;
+import com.arc.service.AIServiceClient;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -29,12 +30,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class RepositoryService {
 
     private final RepositoryRepository repositoryRepository;
+
+    private final KafkaProducerService kafkaProducerService;
+
     private final AIServiceClient aiServiceClient;
 
     @Value("${settings.paths.storage_path}")
@@ -59,16 +62,22 @@ public class RepositoryService {
         Path extractedFolder =
                 repoRoot.resolve("extracted");
 
-        Files.createDirectories(uploadedFolder);
+        Files.createDirectories(
+                uploadedFolder
+        );
 
-        Files.createDirectories(extractedFolder);
+        Files.createDirectories(
+                extractedFolder
+        );
 
         Path zipPath =
                 uploadedFolder.resolve(
                         file.getOriginalFilename()
                 );
 
-        file.transferTo(zipPath);
+        file.transferTo(
+                zipPath
+        );
 
         ZipExtractor.extractZip(
                 zipPath,
@@ -84,20 +93,31 @@ public class RepositoryService {
                 "\n===== SCANNED FILES ====="
         );
 
-        scannedFiles.forEach(System.out::println);
+        scannedFiles.forEach(
+                System.out::println
+        );
+
+        String repositoryName =
+                RepositoryFileReader.getRepositoryName(
+                        file.getOriginalFilename()
+                );
 
         List<RepositoryFile> repositoryFiles =
                 scannedFiles.stream()
                         .map(path -> {
                             try {
-                                return RepositoryFileReader
-                                        .readFile(
-                                                extractedFolder,
-                                                path
-                                        );
-                            }
-                            catch (Exception e) {
+
+                                return RepositoryFileReader.readFile(
+                                        repoId,
+                                        repositoryName,
+                                        extractedFolder,
+                                        path
+                                );
+
+                            } catch (Exception e) {
+
                                 throw new RuntimeException(e);
+
                             }
                         })
                         .toList();
@@ -109,29 +129,29 @@ public class RepositoryService {
         repositoryFiles.forEach(f -> {
 
             System.out.println(
-                    "\nFILE: "
+                    "\nFILE : "
                             + f.getRelativePath()
             );
 
             System.out.println(
-                    "EXTENSION: "
+                    "EXTENSION : "
                             + f.getExtension()
             );
 
             System.out.println(
-                    "CONTENT LENGTH: "
+                    "CONTENT LENGTH : "
                             + f.getContent().length()
             );
-        });
 
-        /*
-         * SAVE REPOSITORY FIRST
-         */
+        });
 
         RepositoryEntity repositoryEntity =
                 RepositoryEntity.builder()
-                        .name(
-                                file.getOriginalFilename()
+                        .repositoryUuid(
+                                repoId
+                        )
+                        .repositoryName(
+                                repositoryName
                         )
                         .originalFileName(
                                 file.getOriginalFilename()
@@ -152,89 +172,43 @@ public class RepositoryService {
                         repositoryEntity
                 );
 
-        /*
-         * CHUNKING
-         */
-
-        List<CodeChunk> codeChunks =
-                repositoryFiles.stream()
-                        .flatMap(f ->
-                                SemanticChunker
-                                        .chunkRepositoryFile(f)
-                                        .stream()
-                        )
-                        .toList();
-
         System.out.println(
-                "\n===== CODE CHUNKS ====="
+                "\n===== PUBLISHING TO KAFKA ====="
         );
 
-        int totalChunks = codeChunks.size();
+        repositoryFiles.forEach(f -> {
 
-        double factor = 0.1;
-        int calculated = (int) Math.ceil(totalChunks * factor);
-        
-        int batchSize = (calculated < 100) ? 100 : calculated;
+            try {
 
-        List<List<IndexRequestDto>> batches = new ArrayList<>();
-        List<IndexRequestDto> batch = new ArrayList<>();
+                kafkaProducerService.publishRepositoryFile(
+                        f
+                );
 
-        for(CodeChunk chunk: codeChunks){
-            IndexRequestDto request = IndexRequestDto.builder()
-                    .chunkId(chunk.getChunkId())
-                    .repositoryId(savedRepository.getId())
-                    .content(chunk.getContent())
-                    .metadata(Map.of(
-                        "filename", chunk.getFileName(),
-                        "path", chunk.getRelativePath(),
-                        "extension", chunk.getExtension()
-                     ))
-                    .build();
-            batch.add(request);
+            } catch (Exception e) {
 
-            if (batch.size() == batchSize) {
-                batches.add(new ArrayList<>(batch));
-                batch.clear();
-            }
-        }
-
-        if (!batch.isEmpty()) {
-            batches.add(new ArrayList<>(batch));
-        }
-
-        batches.parallelStream().forEach(b -> {
-            System.out.println("Sending batch of size: " + b.size());
-            try{
-                aiServiceClient.indexChunk(IndexBatchRequestDTO.builder()
-                        .requests(b)
-                        .build());
-            }
-            catch(Exception e){
                 e.printStackTrace();
+
             }
+
         });
 
         return RepositoryResponseDto
                 .builder()
-                .id(
-                        savedRepository.getId()
-                )
-                .name(
-                        savedRepository.getName()
-                )
-                .status(
-                        savedRepository.getStatus()
-                )
-                .uploadedAt(
-                        savedRepository.getUploadedAt()
-                )
+                .id(savedRepository.getId())
+                .repositoryUuid(savedRepository.getRepositoryUuid())
+                .name(savedRepository.getRepositoryName())
+                .status(savedRepository.getStatus())
+                .uploadedAt(savedRepository.getUploadedAt())
                 .build();
     }
 
     public SummaryResponseDto summarizeRepository(
             Long repositoryId
     ) {
-        repositoryRepository.findById(repositoryId)
+
+        repositoryRepository.findById(
+                        repositoryId
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Repository not found: "
@@ -250,27 +224,34 @@ public class RepositoryService {
     public AskResponseDto askRepository(
             Long repositoryId,
             String question
-    ){
-        repositoryRepository.findById(repositoryId)
-                .orElseThrow(() ->
+    ) {
+
+        RepositoryEntity repository =
+                repositoryRepository.findById(
+                        repositoryId
+                ).orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Repository not found: "
-                                + repositoryId
+                                        + repositoryId
                         )
                 );
 
         return aiServiceClient.askRepository(
-                repositoryId,
+                repository.getRepositoryUuid(),
                 question
         );
     }
 
+
     public AskResponseDto askGenerativeAIRepository(
             Long repositoryId,
             String question
-    ){
-        repositoryRepository.findById(repositoryId)
-                .orElseThrow(() ->
+    ) {
+
+        RepositoryEntity repository =
+                repositoryRepository.findById(
+                        repositoryId
+                ).orElseThrow(() ->
                         new IllegalArgumentException(
                                 "Repository not found: "
                                         + repositoryId
@@ -278,45 +259,80 @@ public class RepositoryService {
                 );
 
         return aiServiceClient.askGenerativeAIRepository(
-                repositoryId,
+                repository.getRepositoryUuid(),
                 question
         );
     }
 
-    public Map<String, String> getRepositoryFilesMap(Long repositoryId) throws IOException {
-        RepositoryEntity repo = repositoryRepository.findById(repositoryId)
-                .orElseThrow(() -> new IllegalArgumentException("Repository not found"));
+    public Map<String, String> getRepositoryFilesMap(
+            Long repositoryId
+    ) throws IOException {
 
-        Path extractedRoot = Paths.get(repo.getExtractedPath());
-        List<Path> scannedPaths = com.arc.util.RepositoryScanner.scanRepository(extractedRoot);
+        RepositoryEntity repo =
+                repositoryRepository.findById(
+                                repositoryId
+                        )
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Repository not found"
+                                )
+                        );
 
-        Map<String, String> filesMap = new java.util.HashMap<>();
+        Path extractedRoot =
+                Paths.get(
+                        repo.getExtractedPath()
+                );
+
+        List<Path> scannedPaths =
+                RepositoryScanner.scanRepository(
+                        extractedRoot
+                );
+
+        Map<String, String> filesMap =
+                new java.util.HashMap<>();
+
         for (Path relPath : scannedPaths) {
-            Path fullPath = extractedRoot.resolve(relPath);
-            String content = Files.readString(fullPath);
 
-            // Convert to a standardized forward-slash key name for the frontend map
-            String cleanKey = "/" + relPath.toString().replace("\\", "/");
-            filesMap.put(cleanKey, content);
+            Path fullPath =
+                    extractedRoot.resolve(
+                            relPath
+                    );
+
+            String content =
+                    Files.readString(
+                            fullPath
+                    );
+
+            String cleanKey =
+                    "/"
+                            + relPath.toString()
+                            .replace("\\", "/");
+
+            filesMap.put(
+                    cleanKey,
+                    content
+            );
         }
+
         return filesMap;
     }
 
+    public List<RepositoryResponseDto> getAllRepository() {
 
-    public List<RepositoryResponseDto> getAllRepository(){
-        List<RepositoryResponseDto> repos = repositoryRepository.findAll()
+        return repositoryRepository.findAll()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
-
-        return repos;
     }
 
     public RepositoryResponseDto getRepository(
             Long repositoryId
-    ){
+    ) {
+
         RepositoryEntity repository =
-                repositoryRepository.findById(repositoryId)
+                repositoryRepository.findById(
+                                repositoryId
+                        )
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
                                         "Repository not found: "
@@ -324,13 +340,16 @@ public class RepositoryService {
                                 )
                         );
 
-        return mapToResponse(repository);
+        return mapToResponse(
+                repository
+        );
     }
 
     private RepositoryResponseDto mapToResponse(RepositoryEntity repo){
         return RepositoryResponseDto.builder()
                 .id(repo.getId())
-                .name(repo.getName())
+                .repositoryUuid(repo.getRepositoryUuid())
+                .name(repo.getRepositoryName())
                 .status(repo.getStatus())
                 .uploadedAt(repo.getUploadedAt())
                 .build();

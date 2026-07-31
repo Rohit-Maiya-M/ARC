@@ -5,4 +5,4 @@ class AskRequest(
 ):
     question: str
 
-    repository_id: int
+    repository_id: str

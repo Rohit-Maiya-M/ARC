@@ -13,6 +13,8 @@ public class RepositoryResponseDto {
 
     private Long id;
 
+    private String repositoryUuid;
+
     private String name;
 
     private RepositoryStatus status;

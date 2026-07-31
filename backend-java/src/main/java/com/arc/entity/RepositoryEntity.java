@@ -1,6 +1,5 @@
 package com.arc.entity;
 
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,8 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Data
 @Table(name = "repositories")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,9 +20,11 @@ public class RepositoryEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String repositoryUuid;
 
     @Column(nullable = false)
-    private String name;
+    private String repositoryName;
 
     @Column(nullable = false)
     private String originalFileName;
@@ -32,9 +33,9 @@ public class RepositoryEntity {
     private String extractedPath;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private RepositoryStatus status;
 
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
-
 }

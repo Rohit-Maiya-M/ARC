@@ -56,3 +56,5 @@ ARC-Repositories/*
 !ARC-Repositories/.gitkeep
 # Ignore local database container engine runtimes
 .containers_data/
+
+ai-service/output.txt

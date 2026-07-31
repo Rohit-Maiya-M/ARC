@@ -1,12 +1,13 @@
 package com.arc.service;
 
-
 import com.arc.dto.*;
+import com.arc.models.RepositoryFile;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import tools.jackson.databind.ObjectMapper;
 
 @Service
 @RequiredArgsConstructor
@@ -14,7 +15,6 @@ public class AIServiceClient {
 
     private final RestTemplate restTemplate;
     private final KafkaProducerService producerService;
-    private final ObjectMapper objectMapper;
 
     @Value("${settings.paths.index_url}")
     private String indexUrl;
@@ -28,13 +28,14 @@ public class AIServiceClient {
     @Value("${settings.paths.ask_generative_ai_url}")
     private String askGenerativeAIUrl;
 
-    public void indexChunk(IndexBatchRequestDTO requests) {
-        try {
-            String jsonBatch = objectMapper.writeValueAsString(requests);
-            producerService.sendBatch(jsonBatch);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to index batch", e);
-        }
+
+    public void indexFile(
+            RepositoryFile repositoryFile
+    ) {
+
+        producerService.publishRepositoryFile(
+                repositoryFile
+        );
     }
 
 
@@ -54,13 +55,15 @@ public class AIServiceClient {
         );
     }
 
+
     public AskResponseDto askRepository(
-            Long repositoryId,
+            String repositoryUuid,
             String question
-    ){
+    ) {
+
         AskRequestDto request =
                 AskRequestDto.builder()
-                        .repositoryId(repositoryId)
+                        .repositoryId(repositoryUuid)
                         .question(question)
                         .build();
 
@@ -71,14 +74,17 @@ public class AIServiceClient {
         );
     }
 
+
     public AskResponseDto askGenerativeAIRepository(
-            Long repositoryId,
+            String repositoryUuid,
             String question
-    ){
-        AskRequestDto request = AskRequestDto.builder()
-                .repositoryId(repositoryId)
-                .question(question)
-                .build();
+    ) {
+
+        AskRequestDto request =
+                AskRequestDto.builder()
+                        .repositoryId(repositoryUuid)
+                        .question(question)
+                        .build();
 
         return restTemplate.postForObject(
                 askGenerativeAIUrl,
@@ -86,5 +92,4 @@ public class AIServiceClient {
                 AskResponseDto.class
         );
     }
-
 }

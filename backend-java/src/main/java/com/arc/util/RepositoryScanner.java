@@ -15,16 +15,7 @@ public class RepositoryScanner {
     private static final Set<String>
             SUPPORTED_EXTENSIONS = Set.of(
 
-            ".java",
-            ".js",
-            ".jsx",
-            ".ts",
-            ".tsx",
-            ".py",
-            ".json",
-            ".yml",
-            ".yaml",
-            ".sql"
+            ".java"            
     );
 
     private static final Set<String>
@@ -113,5 +104,16 @@ public class RepositoryScanner {
                 ||
 
                 fileName.equals("build.gradle");
-    }
+    }    
 }
+
+
+// ".js",
+// ".jsx",
+// ".ts",
+// ".tsx",
+// ".py",
+// ".json",
+// ".yml",
+// ".yaml",
+// ".sql"

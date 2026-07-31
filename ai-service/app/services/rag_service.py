@@ -1,14 +1,32 @@
-from app.services.vector_store_service import VectorStoreService
 from app.prompts.repository_prompt_builder import RepositoryPromptBuilder
-from app.services.retrieval_service import RetrievalService
+from app.vector_store.retrieval_service import RetrievalService
+
 
 class RAGService:
-    def __init__(self):                
-        self.vector_store_service = VectorStoreService()
 
+    def __init__(self):
 
-    def generatePrompt(self, repository_id: int, question: str, top_k: int = 5):        
-        retriever = RetrievalService()
-        final_docs = retriever.search(repository_id, question, top_k=top_k)    
-        prompt = RepositoryPromptBuilder.build(question, final_docs)
-        return prompt    
+        self.retriever = RetrievalService()
+
+    def generate_prompt(
+        self,
+        repository_id: str,
+        question: str,
+        top_k: int = 5,
+    ) -> str:
+        """
+        Builds the final prompt for Gemini using retrieved repository context.
+        """
+
+        search_results = self.retriever.search(
+            repository_id=repository_id,
+            query=question,
+            top_k=top_k,
+        )
+
+        prompt = RepositoryPromptBuilder.build(
+            question=question,
+            search_results=search_results,
+        )
+
+        return prompt

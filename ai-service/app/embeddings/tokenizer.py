@@ -26,7 +26,8 @@ tokenizer = AutoTokenizer.from_pretrained(
     use_fast=True,
     local_files_only=True
 )
-
+print(type(tokenizer))
+tokenizer.model_max_length = int(1e30)
 print("\n" + "=" * 90)
 print("TOKENIZER")
 print("=" * 90)
