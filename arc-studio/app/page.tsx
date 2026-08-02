@@ -551,13 +551,15 @@ export default function ArcStudioDashboard() {
 
               <div className="flex-1 p-4 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
                 {chatHistory.map((msg, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`p-3.5 rounded-xl text-sm leading-relaxed max-w-[88%] shadow-sm ${
-                      msg.role === "user" ? "bg-indigo-600 text-white ml-auto rounded-tr-none" : "bg-zinc-800 text-zinc-200 border border-zinc-700/60 rounded-tl-none whitespace-pre-wrap"
+                  <div
+                    key={idx}
+                    className={`p-3.5 rounded-xl text-sm leading-relaxed max-w-[88%] shadow-sm overflow-hidden ${
+                      msg.role === "user"
+                        ? "bg-indigo-600 text-white ml-auto rounded-tr-none whitespace-pre-wrap break-words"
+                        : "bg-zinc-800 text-zinc-200 border border-zinc-700/60 rounded-tl-none whitespace-pre-wrap break-words"
                     }`}
                   >
-                    {msg.text}
+                      {msg.text}
                   </div>
                 ))}
               </div>
