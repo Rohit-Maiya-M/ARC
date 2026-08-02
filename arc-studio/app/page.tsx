@@ -8,6 +8,9 @@ import {
 } from "@codesandbox/sandpack-react";
 import { Send, Database, Cpu, Layers, FileCode, Terminal, UploadCloud, Loader2, Folder, FolderOpen, ChevronDown, ChevronRight, Play, TerminalSquare, Trash2, Maximize2, Minimize2 } from "lucide-react";
 
+// Environment-based API base URL configuration for production / Docker deployments
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 interface TreeFile {
   type: "file";
   path: string;
@@ -177,7 +180,7 @@ export default function ArcStudioDashboard() {
     logToTerminal(`Initiating instant lifecycle mount for Repository ID: ${repoId}...`);
 
     try {
-      const filesResponse = await fetch(`http://localhost:8080/repositories/${repoId}/files`);
+      const filesResponse = await fetch(`${API}/repositories/${repoId}/files`);
       if (!filesResponse.ok) throw new Error("Failed to load specified project structure map");
       
       const incomingFilesMap = await filesResponse.json();
@@ -221,7 +224,7 @@ export default function ArcStudioDashboard() {
     formData.append("file", file);
 
     try {
-      const uploadResponse = await fetch("http://localhost:8080/repositories/upload", {
+      const uploadResponse = await fetch(`${API}/repositories/upload`, {
         method: "POST",
         body: formData,
       });
@@ -233,7 +236,7 @@ export default function ArcStudioDashboard() {
       setTargetRepoId(repoId);
       logToTerminal(`Spring framework pipeline processed upload. Assigned Repository Database ID: ${repoId}`);
 
-      const filesResponse = await fetch(`http://localhost:8080/repositories/${repoId}/files`);
+      const filesResponse = await fetch(`${API}/repositories/${repoId}/files`);
       if (!filesResponse.ok) throw new Error("Failed to fetch repository files structure map");
       
       const incomingFilesMap = await filesResponse.json();
@@ -270,7 +273,7 @@ export default function ArcStudioDashboard() {
     logToTerminal(`Dispatching query to Gemini core context model mapping array...`);
 
     try {
-      const response = await fetch(`http://localhost:8080/repositories/${targetRepoId}/gemini/ask`, {
+      const response = await fetch(`${API}/repositories/${targetRepoId}/gemini/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: currentQuery }),
@@ -437,7 +440,7 @@ export default function ArcStudioDashboard() {
             <div className="flex-1 h-full flex flex-col overflow-hidden">
               
               <div className="flex-1 flex overflow-hidden p-4 pb-2">
-                <SandpackProvider             
+                <SandpackProvider            
                   customSetup={{ entry: activeFile }}
                   theme="dark"
                   files={virtualFiles}
@@ -559,7 +562,7 @@ export default function ArcStudioDashboard() {
                         : "bg-zinc-800 text-zinc-200 border border-zinc-700/60 rounded-tl-none whitespace-pre-wrap break-words"
                     }`}
                   >
-                      {msg.text}
+                    {msg.text}
                   </div>
                 ))}
               </div>

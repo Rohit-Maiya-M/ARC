@@ -49,7 +49,7 @@ frontend/
 scripts/
 
 # Local embedding models
-models/
+/models/
 docs/
 
 ARC-Repositories/*
