@@ -17,7 +17,10 @@ import java.util.Map;
 @RequestMapping("/repositories")
 @RequiredArgsConstructor
 // FIXED: Reads the frontend URL dynamically from your AWS environment configuration
-@CrossOrigin(origins = "${app.cors.allowed-origins:http://localhost:3000}")
+@CrossOrigin(origins = {
+    "http://localhost:3000",
+    "http://54.209.21.106:3000"
+})
 public class RepositoryController {
 
     private final RepositoryService repositoryService;
