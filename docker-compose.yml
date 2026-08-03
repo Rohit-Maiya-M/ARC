@@ -48,23 +48,37 @@ services:
   milvus:
     image: milvusdb/milvus:v2.4.0
     container_name: milvus
+
     command: ["milvus", "run", "standalone"]
+
     ports:
       - "19530:19530"
       - "9091:9091"
+
     environment:
       ETCD_ENDPOINTS: ${ETCD_ENDPOINTS}
       MINIO_ADDRESS: ${MINIO_ADDRESS}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+
     depends_on:
       - etcd
       - minio
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9091/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
     volumes:
       - ./.containers_data/milvus/milvus:/var/lib/milvus
+
+    restart: always
+
     networks:
       - arc-network
-    restart: always
 
   # ----------------------------------------------------
   # 3. KAFKA
@@ -103,6 +117,17 @@ services:
     depends_on:
       zookeeper:
         condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cub kafka-ready -b localhost:29092 1 20"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
     ports:
       - "9092:9092"
@@ -147,8 +172,11 @@ services:
       EMBEDDING_MAX_LENGTH: ${EMBEDDING_MAX_LENGTH}   
       ENABLE_TOKEN_DEBUG: ${ENABLE_TOKEN_DEBUG}
     depends_on:
-      - milvus
-      - arc-kafka
+      milvus:
+        condition: service_healthy
+
+      arc-kafka:
+        condition: service_healthy
     volumes:
       - ./ai-service:/app
       - ./models/bge-base-en-v1.5:/models/bge-base-en-v1.5:ro
@@ -175,9 +203,9 @@ services:
     depends_on:
       - postgres
       - arc-kafka
-      - ai-service
+      - ai-service    
     volumes:
-      - ./ARC-Repositories:/app/storage
+      - ./storage/repositories:/app/storage
     networks:
       - arc-network
     restart: on-failure

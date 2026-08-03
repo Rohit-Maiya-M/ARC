@@ -8,9 +8,9 @@
 
 ARC (Autonomous Repository Companion) is an AI-powered repository analysis platform that enables developers to understand large Java codebases through semantic search and Retrieval-Augmented Generation (RAG).
 
-Instead of searching source code using traditional keyword matching, ARC parses repositories into semantic code chunks, generates vector embeddings using ONNX Runtime, indexes them inside Milvus, and retrieves only the most relevant code before generating answers with Google's Gemini model.
+Instead of relying on traditional keyword-based search, ARC parses repositories into semantic code chunks, generates vector embeddings using ONNX Runtime, indexes them in Milvus, and retrieves the most relevant code before generating context-aware answers using Google's Gemini model.
 
-The project follows a microservice architecture built using Spring Boot, FastAPI, Kafka, and Milvus.
+The project follows a microservice architecture built with Spring Boot, FastAPI, Apache Kafka, and Milvus.
 
 ---
 
@@ -18,7 +18,7 @@ The project follows a microservice architecture built using Spring Boot, FastAPI
 
 ```text
                              +----------------------+
-                             |   React Frontend     |
+                             |   Next.js Frontend   |
                              +----------+-----------+
                                         |
                                         ▼
@@ -46,7 +46,7 @@ The project follows a microservice architecture built using Spring Boot, FastAPI
                           +---------------------------+
                                         |
                                         ▼
-                             Kafka Consumer
+                               Kafka Consumer
                                         |
                                         ▼
                            Tree-sitter Java Parser
@@ -75,38 +75,34 @@ The project follows a microservice architecture built using Spring Boot, FastAPI
 
 ---
 
-# ⚡ Features
+# ✨ Features
 
-- ✅ Java Repository Analysis
-- ✅ Automatic Repository Upload & Extraction
-- ✅ Tree-sitter Java Parsing
-- ✅ Semantic Code Chunking
-- ✅ ONNX Runtime Embedding Generation
-- ✅ Milvus Vector Database
-- ✅ Kafka-based Asynchronous Indexing
-- ✅ Semantic Code Search
-- ✅ Retrieval-Augmented Generation (RAG)
-- ✅ Context-aware AI Answers
-- ✅ Repository Isolation using UUIDs
-- ✅ Spring Boot + FastAPI Microservices
-- ✅ Dockerized Deployment
+- Java Repository Analysis
+- Automatic ZIP Repository Upload
+- Tree-sitter Java Parsing
+- Semantic Code Chunking
+- ONNX Runtime Embedding Generation
+- Milvus Vector Database
+- Kafka-based Asynchronous Indexing
+- Semantic Code Search
+- Retrieval-Augmented Generation (RAG)
+- Context-aware AI Answers
+- Repository Isolation using UUIDs
+- Spring Boot + FastAPI Microservices
+- Dockerized Deployment
 
 ---
 
 # 🛠️ Tech Stack
 
-## 🎨 Frontend
+## Frontend
 
+- Next.js
 - React
-- Vite
-- TailwindCSS
 - TypeScript
+- Tailwind CSS
 
----
-
-## ☕
-
-Backend
+## Backend
 
 - Java 21
 - Spring Boot
@@ -115,28 +111,159 @@ Backend
 - Hibernate
 - PostgreSQL
 
----
-
-## 🤖 AI Service
+## AI Service
 
 - FastAPI
 - Tree-sitter
 - ONNX Runtime
 - HuggingFace Tokenizers
 - NumPy
-- Kafka
+- Apache Kafka
 - Milvus
 - Google Gemini 2.5 Flash
 
----
-
-## 🐳 Infrastructure
+## Infrastructure
 
 - Docker
 - Docker Compose
-- Kafka
-- Milvus
 - PostgreSQL
+- Apache Kafka
+- Milvus
+
+---
+
+# 📁 Project Structure
+
+```text
+ARC/
+│
+├── ai-service/
+├── backend-java/
+├── arc-studio/
+├── models/
+├── ARC-Repositories/
+├── docker-compose.yml
+├── .env.example
+├── README.md
+└── .gitignore
+```
+
+---
+
+# 📋 Prerequisites
+
+Before running ARC, install:
+
+- Docker Desktop
+- Docker Compose
+- Git
+
+For local development:
+
+- Java 21
+- Python 3.10+
+- Node.js 20+
+
+---
+
+# 📦 Installation
+
+## 1. Clone the repository
+
+```bash
+git clone https://github.com/<your-username>/ARC.git
+cd ARC
+```
+
+---
+
+## 2. Download the Embedding Model
+
+ARC uses the **BAAI/bge-base-en-v1.5** embedding model.
+
+Download the model and place it inside:
+
+```text
+models/
+└── bge-base-en-v1.5/
+    ├── config.json
+    ├── tokenizer.json
+    ├── tokenizer_config.json
+    ├── vocab.txt
+    ├── special_tokens_map.json
+    └── onnx/
+        └── model.onnx
+```
+
+> **Note**
+>
+> The embedding model is **not included** in this repository because of its size.
+
+---
+
+## 3. Configure Environment Variables
+
+Copy:
+
+```text
+.env.example
+```
+
+to
+
+```text
+.env
+```
+
+and update the required values.
+
+At minimum configure:
+
+- GEMINI_API_KEY
+- POSTGRES_PASSWORD
+- NEXT_PUBLIC_API_URL (if deploying remotely)
+
+---
+
+## 4. Configure Spring Boot
+
+Copy:
+
+```text
+backend-java/src/main/resources/application.properties.example
+```
+
+to
+
+```text
+backend-java/src/main/resources/application.properties
+```
+
+Update any values if necessary.
+
+When using Docker Compose, most configuration is automatically supplied through environment variables.
+
+---
+
+# ▶️ Running ARC
+
+Build and start all services
+
+```bash
+docker compose up --build
+```
+
+Run in detached mode
+
+```bash
+docker compose up -d --build
+```
+
+Stop all services
+
+```bash
+docker compose down
+```
 
 ---
 
@@ -192,7 +319,7 @@ Each indexed chunk stores:
 - Token Count
 - Source Code
 - SHA-256 Content Hash
-- 768-Dimensional Embedding
+- 768-dimensional Embedding
 
 ---
 
@@ -229,55 +356,6 @@ Retrieval uses:
 
 ---
 
-# 🧠 Embedding Pipeline
-
-### Embedding Model
-
-```
-BAAI/bge-base-en-v1.5
-```
-
-### Inference Engine
-
-```
-ONNX Runtime (CPU)
-```
-
-### Embedding Dimension
-
-```
-768
-```
-
-### Maximum Context Length
-
-```
-512 Tokens
-```
-
-### Embedding Workflow
-
-```text
-Source Code
-      │
-      ▼
-Tokenizer
-      │
-      ▼
-ONNX Runtime
-      │
-      ▼
-CLS Pooling
-      │
-      ▼
-L2 Normalization
-      │
-      ▼
-768-D Embedding
-```
-
----
-
 # ⚙️ ONNX Runtime Optimizations
 
 ARC optimizes embedding generation using:
@@ -286,128 +364,18 @@ ARC optimizes embedding generation using:
 - Singleton ONNX Session
 - Dynamic Input Detection
 - Dynamic Output Detection
-- Automatic token_type_ids Support
 - CLS Pooling
 - Batch Inference
 - L2 Normalization
-- Graph Optimization (ORT_ENABLE_ALL)
+- Graph Optimization
 - Multi-threaded CPU Execution
 
 ---
 
-# 📁 Project Structure
-
-```text
-ARC
-│
-├── ai-service/
-│   ├── app/
-│   │   ├── embeddings/
-│   │   ├── indexing/
-│   │   ├── parsers/
-│   │   ├── prompts/
-│   │   ├── services/
-│   │   ├── vector_store/
-│   │   └── main.py
-│   │
-│   └── Dockerfile
-│
-├── backend-java/
-│
-├── arc-studio/
-│
-├── models/
-│
-├── ARC-Repositories/
-│
-├── docker-compose.yml
-│
-└── README.md
-```
-
----
-
-# 📋 Prerequisites
-
-- Docker Desktop
-- Docker Compose
-- Java 21
-- Python 3.10+
-- Node.js 18+
-- Git
-
----
-
-# 🔧 Environment Variables
-
-```env
-GEMINI_API_KEY=
-
-LOCAL_EMBEDDING_MODEL_PATH=
-ONNX_MODEL_PATH=
-
-VECTOR_DIM=768
-
-MILVUS_HOST=
-MILVUS_PORT=
-
-KAFKA_BOOTSTRAP_SERVERS=
-KAFKA_INDEX_TOPIC=
-KAFKA_CONSUMER_GROUP=
-
-POSTGRES_DB=
-POSTGRES_USER=
-POSTGRES_PASSWORD=
-
-EMBEDDING_MAX_LENGTH=512
-```
-
----
-
-# ▶️ Running ARC
-
-Start all services
-
-```bash
-docker compose up --build
-```
-
-Stop services
-
-```bash
-docker compose down
-```
-
----
-
-# 📈 Performance
-
-## Repository Indexing
-
-| Stage | Typical Time |
-|--------|-------------:|
-| Tree-sitter Parsing | ~0.01 s |
-| Semantic Chunking | ~0.02 s |
-| ONNX Embedding | ~0.10 s |
-| Milvus Storage | ~4–5 s |
-
----
-
-## Question Answering
-
-| Stage | Typical Time |
-|--------|-------------:|
-| Query Embedding | ~0.04 s |
-| Milvus Retrieval | ~0.04 s |
-| Prompt Construction | <0.01 s |
-| Gemini Response | ~2–3 s |
-
----
-
-# 🎯 Current Capabilities
+# 📈 Current Capabilities
 
 - Java Repository Indexing
-- Java Semantic Search
+- Semantic Repository Search
 - AI-powered Repository Question Answering
 - Context-aware Code Understanding
 - Repository-level Isolation
@@ -419,7 +387,7 @@ docker compose down
 # 🚧 Roadmap
 
 - Cross-Encoder Reranking
-- Multi-language Support (Python, JavaScript, TypeScript)
+- Multi-language Support
 - Hybrid Lexical + Semantic Search
 - Repository Summarization
 - AI Response Cache

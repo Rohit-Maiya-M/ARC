@@ -21,10 +21,6 @@ class RepositoryIndexer:
 
         total_start = time.perf_counter()
 
-        # ----------------------------------------
-        # Language Detection
-        # ----------------------------------------
-
         start = time.perf_counter()
 
         language = LanguageDetector.detect(
@@ -32,10 +28,6 @@ class RepositoryIndexer:
         )
 
         language_time = time.perf_counter() - start
-
-        # ----------------------------------------
-        # Parser Creation
-        # ----------------------------------------
 
         start = time.perf_counter()
 
@@ -45,10 +37,6 @@ class RepositoryIndexer:
 
         parser_creation_time = time.perf_counter() - start
 
-        # ----------------------------------------
-        # Parsing
-        # ----------------------------------------
-
         start = time.perf_counter()
 
         symbols = parser.parse(
@@ -56,10 +44,6 @@ class RepositoryIndexer:
         )
 
         parsing_time = time.perf_counter() - start
-
-        # ----------------------------------------
-        # Chunking
-        # ----------------------------------------
 
         start = time.perf_counter()
 
@@ -69,10 +53,6 @@ class RepositoryIndexer:
         )
 
         chunking_time = time.perf_counter() - start
-
-        # ----------------------------------------
-        # Embedding
-        # ----------------------------------------
 
         start = time.perf_counter()
 

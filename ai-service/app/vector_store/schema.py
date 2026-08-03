@@ -12,20 +12,12 @@ def create_schema(dim: int) -> CollectionSchema:
 
     fields = [
 
-        # --------------------------------------------------
-        # Primary Key
-        # --------------------------------------------------
-
         FieldSchema(
             name="chunk_id",
             dtype=DataType.VARCHAR,
             max_length=128,
             is_primary=True,
         ),
-
-        # --------------------------------------------------
-        # Repository
-        # --------------------------------------------------
 
         FieldSchema(
             name="repository_id",
@@ -38,10 +30,6 @@ def create_schema(dim: int) -> CollectionSchema:
             dtype=DataType.VARCHAR,
             max_length=256,
         ),
-
-        # --------------------------------------------------
-        # File
-        # --------------------------------------------------
 
         FieldSchema(
             name="file_id",
@@ -60,10 +48,6 @@ def create_schema(dim: int) -> CollectionSchema:
             dtype=DataType.VARCHAR,
             max_length=1024,
         ),
-
-        # --------------------------------------------------
-        # Code Symbol
-        # --------------------------------------------------
 
         FieldSchema(
             name="language",
@@ -88,10 +72,6 @@ def create_schema(dim: int) -> CollectionSchema:
             dtype=DataType.VARCHAR,
             max_length=1024,
         ),
-
-        # --------------------------------------------------
-        # Chunk Metadata
-        # --------------------------------------------------
 
         FieldSchema(
             name="chunk_index",
@@ -128,10 +108,6 @@ def create_schema(dim: int) -> CollectionSchema:
             dtype=DataType.INT64,
         ),
 
-        # --------------------------------------------------
-        # Chunk Content
-        # --------------------------------------------------
-
         FieldSchema(
             name="content_hash",
             dtype=DataType.VARCHAR,
@@ -143,10 +119,6 @@ def create_schema(dim: int) -> CollectionSchema:
             dtype=DataType.VARCHAR,
             max_length=32768,
         ),
-
-        # --------------------------------------------------
-        # Vector
-        # --------------------------------------------------
 
         FieldSchema(
             name="embedding",

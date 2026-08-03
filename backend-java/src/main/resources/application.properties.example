@@ -1,15 +1,54 @@
+# =====================================================
+# ARC - Spring Boot Configuration Example
+# Copy this file to application.properties and update
+# the values as needed.
+# =====================================================
+
 spring.application.name=ARC
 
-spring.datasource.url=ENTER_URL
-spring.datasource.username=ENTER_USERNAME
-spring.datasource.password=ENTER_PASSWORD
+# =====================================================
+# Database Configuration
+# =====================================================
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/arc_db}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:your_database_username}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:your_database_password}
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
+# =====================================================
+# File Upload Limits
+# =====================================================
 spring.servlet.multipart.max-file-size=500MB
 spring.servlet.multipart.max-request-size=500MB
 
-settings.paths.storage_path=ENTER_ARC_REPOSITORIES
-settings.paths.index_url=http://localhost:8000/index
-settings.paths.summary_url=http://localhost:8000/summary
+# =====================================================
+# Repository Storage
+# =====================================================
+settings.paths.storage_path=${SETTINGS_STORAGE_PATH:/app/storage}
+
+# =====================================================
+# AI Service Endpoints
+# =====================================================
+settings.paths.index_url=${AI_SERVICE_INDEX_URL:http://arc-ai-service:8000/startup}
+settings.paths.summary_url=${AI_SERVICE_SUMMARY_URL:http://arc-ai-service:8000/summary}
+settings.paths.ask_url=${AI_SERVICE_ASK_URL:http://arc-ai-service:8000/ask}
+settings.paths.ask_generative_ai_url=${AI_SERVICE_GENERATIVE_URL:http://arc-ai-service:8000/generate/api}
+
+# =====================================================
+# Apache Kafka
+# =====================================================
+spring.kafka.bootstrap-servers=${SPRING_KAFKA_BOOTSTRAP_SERVERS:arc-kafka:29092}
+
+spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
+spring.kafka.producer.value-serializer=org.apache.kafka.common.serialization.StringSerializer
+
+# =====================================================
+# CORS Configuration
+# =====================================================
+# Replace with your frontend URL.
+# Example:
+# http://localhost:3000
+# http://YOUR_PUBLIC_IP:3000
+# https://your-domain.com
+spring.cors.allowed-origins=http://localhost:3000

@@ -38,18 +38,15 @@ class LineTracker:
 
         if not offset_mapping:
             return (1, 1)
-
-        # Build newline character positions
+        
         newline_positions = [
             index
             for index, ch in enumerate(text)
             if ch == "\n"
         ]
-
-        # Character where this chunk begins
+        
         start_char = offset_mapping[token_start][0]
-
-        # Character where this chunk ends
+        
         end_char = offset_mapping[token_end - 1][1]
 
         start_line = self._char_to_line(

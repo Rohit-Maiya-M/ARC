@@ -88,7 +88,6 @@ class Embedder:
                 )
             ]
 
-            # CLS Pooling
             embeddings = last_hidden_state[:, 0, :]
 
         else:

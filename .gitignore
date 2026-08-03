@@ -52,9 +52,9 @@ scripts/
 /models/
 docs/
 
-ARC-Repositories/*
-!ARC-Repositories/.gitkeep
+storage/repositories/*
+!storage/repositories/.gitkeep
 # Ignore local database container engine runtimes
 .containers_data/
 
-ai-service/output.txt
+ai-service/app/utils/reranker.py
